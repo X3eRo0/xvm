@@ -1,0 +1,77 @@
+//
+// Created by X3eRo0 on 2/21/2021.
+//
+
+#ifndef XVM_SYMBOLS_H
+#define XVM_SYMBOLS_H
+
+#include "const.h"
+
+/*
+*
+* structure of xvm bytecode files
+*
+*  +-----------------+
+*  |    XVM_MAGIC    |
+*  +-----------------+
+*  |   ENTRY_POINT   |
+*  +-----------------+
+*  |    N_SECTIONS   |
+*  +-----------------+
+*  |    N_SECTION    |<-----+
+*  |        *        |      |--- .text, .data, etc.
+*  |  SECTION INFO   |<-----+
+*  +-----------------+
+*  |      .text      |
+*  +-----------------+
+*  |      .data      |
+*  +-----------------+
+*
+*/
+
+typedef struct sym_entry_t {
+
+    char* name; // pointer to symbol name string
+    u32   addr; // address of symbol in binary
+    struct sym_entry_t* next; // next symbol
+
+} sym_entry;
+
+typedef struct symtab_t {
+
+    sym_entry*	symbols; // head of symbol table
+    u32         size;
+
+} symtab;
+
+typedef struct binary_t {
+
+    u32 x_magic; // xvm magic bytes
+    u32 x_entry; // entry point
+    u32 x_nsect; // number of sections
+
+
+} binary;
+
+// binary parsing related functions
+
+/* ****************************** SYM_ENTRY ***************************** */
+sym_entry* init_sym_entry();
+u32 display_sym_entry(sym_entry* x_sym_entry);
+u32 fini_sym_entry(sym_entry* x_sym_entry);
+
+/* ********************************************************************** */
+
+/* ******************************* SYMTAB ******************************* */
+
+symtab* init_symtab();
+u32 add_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr);
+u32 del_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr);
+u32 resolve_symbol_addr(symtab* x_symtab, char* symbol_name);
+char* resolve_symbol_name(symtab* x_symtab, u32 symbol_addr);
+u32 display_symtab(symtab* x_symtab);
+u32 fini_symtab(symtab * x_symtab);
+
+/* ********************************************************************** */
+
+#endif //XVM_SYMBOLS_H
