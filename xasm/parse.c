@@ -142,7 +142,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
             }
 
             arg->arg_type |= arg_pointer;   // this class of argument is pointer
-                                            // with or without (offset & register)
+            // with or without (offset & register)
         } else {
             xasm_error(E_INVALID_SYNTAX, (u32)__LINE__ - 1, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", args);
         }
@@ -213,7 +213,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
                 }
             }
         }
-        
+
         fini_arg(arg1); arg1 = NULL;
         fini_arg(arg2); arg2 = NULL;
         return size;
@@ -311,23 +311,4 @@ u32 xasm_assemble(xasm* xasm){
 
     display_symtab(xasm->symtab);
     return E_OK;
-}
-
-int main(int argc, char* argv[]){
-
-
-    xasm* xasm = init_xasm();
-
-    if (argc != 3) {
-        printf("Usage %s <input.asm> <output.bin>\n", argv[0]);
-        return E_ERR;
-    }
-
-    open_ifile(xasm, argv[1]);
-    open_ofile(xasm, argv[2]);
-    xasm_assemble(xasm);
-    fini_xasm(xasm);
-    xasm = NULL;
-    return E_OK;
-
 }

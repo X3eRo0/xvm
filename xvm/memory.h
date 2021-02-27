@@ -5,7 +5,7 @@
 #ifndef XVM_MEMORY_H
 #define XVM_MEMORY_H
 
-#include "const.h"
+#include "../common/const.h"
 
 #define PROT_READ  1
 #define PROT_WRITE 2

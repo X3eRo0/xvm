@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "symbols.h"
+#include "../common/symbols.h"
 
 #define XVM_NINSTR  5
 #define XVM_NREGS   7
