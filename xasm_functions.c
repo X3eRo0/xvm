@@ -84,16 +84,146 @@ u32 get_sign(char s){
     return 1;
 }
 
-u32 xasm_error(u32 error_id, u32 line, char* func){
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cert-err34-c"
+u32 xasm_escape_string(char* unescaped) {
+    char* escaped = ++unescaped;
+    char* writeptr = unescaped;
+    u32 size = 1;
+    while (unescaped[0] != '"'){
+        if (unescaped[0] == '\\'){
+            // if an escape sequence is found
+            // process it and update the current string
+            // escaped string will always be equal to or
+            // smaller than the unescaped string, so we
+            // can use the same memory for escaping.
+            switch(unescaped[1]){
+                case 'n' : writeptr[0] = '\n'; break;
+                case 'r' : writeptr[0] = '\r'; break;
+                case 't' : writeptr[0] = '\t'; break;
+                case 'b' : writeptr[0] = '\b'; break;
+                case 'a' : writeptr[0] = '\a'; break;
+                case 'f' : writeptr[0] = '\f'; break;
+                case 'v' : writeptr[0] = '\v'; break;
+                case '\\': writeptr[0] = '\\'; break;
+                case 'x' : { // for escaping hex digits
+                    u32 num = 0;
+
+                    // check if escape sequence is valid or not
+                    if (!is_hex(unescaped[2]) || !is_hex(unescaped[3])){
+                        xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "hex sequence out of range");
+                    }
+
+                    // use only 2 digits
+                    if (sscanf(&unescaped[2], "%2x", &num) < 1){
+                        xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "\\x used with no hex digits");
+                    }
+                    writeptr[0] = (char)num;
+                    unescaped += 2;
+                    break;
+                }
+                default: xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "Unknown escape sequence : \"\\%c\"", unescaped[1]);
+            };
+            unescaped++;
+        }
+        unescaped++; writeptr++; size++; // normal bytes just increment
+    }
+    writeptr[0] = '\x00';   // terminate the string at the ending quote (")
+    return size;            // return the size of string or bytes
+}
+#pragma clang diagnostic pop
+
+u32 xasm_resolve_number(char* num_s){
+    // detect base and return number
+
+    if (*num_s == '#'){
+        // just in case if we get an
+        // input starting with '#'
+        num_s++;
+    }
+
+    char* z_ptr = strchr(num_s, '0');
+    char* x_ptr = strchr(num_s, 'x');
+    char* b_ptr = strchr(num_s, 'b');
+    char* o_ptr = strchr(num_s, 'o');
+    char* temp  = NULL;
+
+    // hexadecimal numbers
+    if (z_ptr && x_ptr) {
+
+        temp = ++x_ptr; // points to digits
+        for (; *temp != '\x00'; temp++){
+            if(!is_digit(*temp)){
+                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid digit", *temp);
+            }
+        }
+
+        return (u32) strtol(x_ptr, NULL, 16);
+    }
+
+    // octal numbers
+    if (z_ptr && o_ptr) {
+
+        temp = ++o_ptr; //points to digits
+        for (; *temp != '\x00'; temp++) {
+            if (!is_digit(*temp)) {
+                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid digit", *temp);
+            }
+        }
+        return (u32) strtol(o_ptr, NULL, 8);
+    }
+
+    // binary numbers
+    if (z_ptr && b_ptr) {
+
+        temp = ++b_ptr; //points to digits
+        for (; *temp != '\x00'; temp++){
+            if (!is_binary(*temp)){
+                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid binary digit", *temp);
+            }
+        }
+        return (u32) strtol(b_ptr, NULL, 2);
+    }
+
+
+    // decimal numbers
+    if (!z_ptr && !x_ptr && !b_ptr && !o_ptr) {
+        return (u32) strtol(num_s, NULL, 10);
+    } else {
+        // invalid base error out
+        xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%s\" is not supported as immediate value", num_s);
+    }
+
+    return E_ERR;
+}
+
+u32 xasm_error(u32 error_id,u32 line, char* func, char* msg, ...){
 
     char* error_msg = NULL;
+    va_list valist;
+
+    va_start(valist, msg);
+    vprintf(msg, valist);
+    printf("\t");
 
     switch (error_id) {
-        case E_INVALID_IMMEDIATE: error_msg = "Invalid Immediate value";break;
-        default: error_msg = "UNKNOWN ERROR";break;
+        case E_INVALID_IMMEDIATE: error_msg = "Invalid Immediate value"; break;
+        case E_INVALID_SYNTAX: error_msg = "Invalid Syntax"; break;
+        case E_INVALID_OPCODE: error_msg = "Uknown Opcode"; break;
+        default: error_msg = "UNKNOWN ERROR"; break;
     }
-    printf("ERROR: %d:%s -- ", line, func);
-    puts(error_msg);
+
+    va_end(valist);
+
+    if (!line && !func){
+        printf("(%d:%s)\t", line, func);
+    }
+
+    if (msg == NULL) {
+        puts(error_msg);
+    } else {
+        puts("");
+    }
     exit(error_id);
 }
 
@@ -111,7 +241,7 @@ u32 disp_arg(arg* x_arg){
         case arg_offset: printf("arg_offset\t");printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
         case arg_register: printf("arg_register\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
         case arg_immediate: printf("arg_immediate\t");printf("value: 0x%.8x\n", x_arg->opt_value);break;
-        case (arg_pointer | arg_offset| arg_register): printf("arg_pointer\t");printf("regid: 0x%x", x_arg->opt_regid);printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
+        case (arg_pointer | arg_offset| arg_register): printf("arg_pointer\t");printf("regid: 0x%x\t", x_arg->opt_regid);printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
         case (arg_pointer | arg_offset): printf("arg_pointer\t");printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
         case (arg_pointer | arg_register): printf("arg_pointer\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
         default: printf("arg_noarg\n");break;

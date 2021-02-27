@@ -13,6 +13,9 @@
 #define E_OK		 0
 #define E_ERR		-1
 
+typedef uint8_t  u8;
+typedef uint16_t u16;
 typedef uint32_t u32;
+typedef uint64_t u64;
 
 #endif //XVM_CONST_H

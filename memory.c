@@ -31,7 +31,7 @@ m_map* allocate_map(m_map* map_head, char* name, char* file, u32 v_size, u32 a_s
         map_head = init_m_map();
         map_head->m_name = name;
         map_head->m_file = file;
-        map_head->m_buff = (char*)malloc(map_head->v_size);
+        map_head->m_buff = (char*)malloc(v_size);
         map_head->v_size = v_size;
         map_head->a_size = a_size;
         map_head->v_addr = v_addr;
@@ -55,6 +55,7 @@ m_map* allocate_map(m_map* map_head, char* name, char* file, u32 v_size, u32 a_s
     t_map = t_map->m_next;
     t_map->m_name = name;
     t_map->m_file = file;
+    t_map->m_buff = (char*)malloc(v_size);
     t_map->v_size = v_size;
     t_map->a_size = a_size;
     t_map->v_addr = v_addr;
@@ -63,6 +64,58 @@ m_map* allocate_map(m_map* map_head, char* name, char* file, u32 v_size, u32 a_s
     t_map->m_next = NULL;
 
     return t_map;
+}
+
+m_map* get_map_by_addr(m_map* map_head, u32 addr){
+    // traverse the maps and check
+    // which map contains this address
+
+    m_map* t_map = map_head;
+    while (t_map != NULL) {
+        if (addr >= t_map->v_addr && addr <= (t_map->v_addr + t_map->v_size)) {
+            return t_map;
+        }
+        t_map = t_map->m_next;
+    }
+
+    // FIXME: give segfault here
+    return NULL;
+}
+
+char* reference(m_map* map_head, u32 addr){
+    // get a reference of virtual memory
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+    u32 offset = addr - addr_map->v_addr;
+
+    return (char*)&addr_map->m_buff[offset];
+}
+
+u8 dereference_byte(m_map* map_head, u32 addr){
+    // dereference addr as a byte ptr from virtual memory
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+    u32 offset = addr - addr_map->v_addr;
+
+    return (u8)addr_map->m_buff[offset];
+}
+
+u16 dereference_word(m_map* map_head, u32 addr){
+    // dereference addr as a word ptr from virtual memory
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+    u32 offset = addr - addr_map->v_addr;
+
+    return (u16)*(u16*)&addr_map->m_buff[offset];
+}
+
+u32 dereference_dword(m_map* map_head, u32 addr){
+    // dereference addr as a dword ptr from virtual memory
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+    u32 offset = addr - addr_map->v_addr;
+
+    return (u32)*(u32*)&addr_map->m_buff[offset];
 }
 
 u32 vmmap(m_map* map_head) {

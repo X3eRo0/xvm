@@ -6,6 +6,10 @@
 
 const char* mnemonics[XVM_NINSTR] = {
         [opc_mov] = "mov",
+        [opc_hlt] = "hlt",
+        [opc_ret] = "ret",
+        [opc_call] = "call",
+        [opc_syscall] = "syscall",
 };
 
 const char* registers[XVM_NREGS] = {
@@ -18,72 +22,6 @@ const char* registers[XVM_NREGS] = {
         [reg_sp] = "$sp",
 };
 
-
-
-u32 xasm_resolve_number(char* num_s){
-    // detect base and return number
-
-    if (*num_s == '#'){
-        // just in case if we get an
-        // input starting with '#'
-        num_s++;
-    }
-
-    char* z_ptr = strchr(num_s, '0');
-    char* x_ptr = strchr(num_s, 'x');
-    char* b_ptr = strchr(num_s, 'b');
-    char* o_ptr = strchr(num_s, 'o');
-    char* temp  = NULL;
-
-    // hexadecimal numbers
-    if (z_ptr && x_ptr) {
-
-        temp = ++x_ptr; // points to digits
-        for (; *temp != '\x00'; temp++){
-            if(!is_digit(*temp)){
-                printf("%c\n", *temp);
-                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__);
-            }
-        }
-
-        return (u32) strtol(x_ptr, NULL, 16);
-    }
-
-    // octal numbers
-    if (z_ptr && o_ptr) {
-
-        temp = ++o_ptr; //points to digits
-        for (; *temp != '\x00'; temp++) {
-            if (!is_digit(*temp)) {
-                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char *) __PRETTY_FUNCTION__);
-            }
-        }
-        return (u32) strtol(o_ptr, NULL, 8);
-    }
-
-    // binary numbers
-    if (z_ptr && b_ptr) {
-
-        temp = ++b_ptr; //points to digits
-        for (; *temp != '\x00'; temp++){
-            if (!is_binary(*temp)){
-                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__);
-            }
-        }
-        return (u32) strtol(b_ptr, NULL, 2);
-    }
-
-
-    // decimal numbers
-    if (!z_ptr && !x_ptr && !b_ptr && !o_ptr) {
-        return (u32) strtol(num_s, NULL, 10);
-    } else {
-        // invalid base error out
-        xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__);
-    }
-
-    return E_ERR;
-}
 
 char* xasm_resolve_mnemonic(u32 opcode){
     // resolve opcode's mnemonic
@@ -100,6 +38,7 @@ u32 xasm_resolve_opcode(char* args){
         }
     }
 
+    xasm_error(E_INVALID_OPCODE, (u32)__LINE__ - 5, (char*)__PRETTY_FUNCTION__, "Unknown Opcode : \"%s\"", args);
     return E_ERR;
 }
 
@@ -121,28 +60,34 @@ u32 xasm_resolve_register_id(char* reg_s){
     return E_ERR;
 }
 
-u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args){
+u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
     // check if argument exists
 
     if (args[0] == '\x00'){
-        arg->arg_type = arg_noarg;
-        return E_OK;
+        if (!calc_size){
+            arg->arg_type = arg_noarg;
+        }
+        return 0; // size of arguments are 0
     }
 
     // check if argument is register?
 
     if (args[0] == '$'){
-        arg->arg_type = arg_register;
-        arg->opt_regid = xasm_resolve_register_id(args);
-        return E_OK;
+        if (!calc_size) {
+            arg->arg_type = arg_register;
+            arg->opt_regid = xasm_resolve_register_id(args);
+        }
+        return sizeof(u8); // size of register
     }
 
     // check if argument is immediate?
 
-    if (args[0] == '#'){
-        arg->arg_type = arg_immediate;
-        arg->opt_value = xasm_resolve_number(++args);
-        return E_OK;
+    if (args[0] == '#') {
+        if (!calc_size) {
+            arg->arg_type = arg_immediate;
+            arg->opt_value = xasm_resolve_number(++args);
+        }
+        return sizeof(u32); // size of immediate
     }
 
     // check if argument if memory location with offset
@@ -152,32 +97,36 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args){
         char base[128] = {0};
         char modifier[128] = {0};
         u32  sign = 1; // +ve
+        u32  size = 0;
 
-        arg->arg_type = arg_pointer;    // this class of argument is pointer
-                                        // with or without (offset & register)
 
         // this is magic XD
         if (sscanf(args, "[%127[^] +-] %1[+-] %127[^]]]", base, modifier, index) >= 1) {
 
-            // check if base exists
-            if (base[0] == '\x00'){ // bail out if it's invalid code
-                return E_ERR;
-            }
-
             // check if base is register or immediate
 
             if (base[0] == '$'){ // register
-                arg->arg_type |= arg_register;
-                arg->opt_regid = xasm_resolve_register_id(base);
+                if (!calc_size) {
+                    arg->arg_type |= arg_register;
+                    arg->opt_regid = xasm_resolve_register_id(base);
+                }
+                size += sizeof(u8);
             }
 
-            if (base[0] == '#') { // offset
-                arg->arg_type |= arg_offset;
-                arg->opt_offset = sign * xasm_resolve_number(base);
+            else if (base[0] == '#') { // offset
+                if (!calc_size) {
+                    arg->arg_type |= arg_offset;
+                    arg->opt_offset = sign * xasm_resolve_number(base);
+                }
+                size += sizeof(u32);
             }
 
-            if (base[0] == '+' || base[0] == '-'){
+            else if (base[0] == '+' || base[0] == '-'){
                 sign = get_sign(base[0]);
+            }
+
+            else {
+                xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", args);
             }
 
             if (modifier[0] != '\x00' && (modifier[0] == '+' || modifier[0] == '-')){
@@ -185,14 +134,27 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args){
             }
 
             if (index[0] != '\x00' && index[0] == '#'){
-                arg->arg_type |= arg_offset;
-                arg->opt_offset = sign * xasm_resolve_number(index);
+                if (!calc_size) {
+                    arg->arg_type |= arg_offset;
+                    arg->opt_offset = sign * xasm_resolve_number(index);
+                }
+                size += sizeof(u32);
             }
 
+            arg->arg_type |= arg_pointer;   // this class of argument is pointer
+                                            // with or without (offset & register)
+        } else {
+            xasm_error(E_INVALID_SYNTAX, (u32)__LINE__ - 1, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", args);
         }
 
-        return E_OK;
+        return size;
 
+    }
+
+    // in case the argument is not either of the above
+    // assume it's a label and return address size
+    if (calc_size){
+        return sizeof(u32);
     }
 
     // check if argument is label
@@ -204,9 +166,82 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args){
         }
     }
 
+    xasm_error(E_INVALID_SYNTAX, (u32) __LINE__ - 8, (char*)__PRETTY_FUNCTION__, "\"%s\" unrecognised argument", args);
 
     return E_ERR;
 }
+
+u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
+    // assemble one line
+
+    char opcds[128] = {0};
+    char arg1s[128] = {0};
+    char arg2s[128] = {0};
+
+    u32 size = 0; // size of instruction
+    u32 opcd = 0;
+    arg* arg1 = init_arg();
+    arg* arg2 = init_arg();
+
+    // check if line is a valid db or ascii
+
+    if (!strncmp(line, "db", 2)){ // db
+        line += 2; // "db" skip these 2 bytes
+        // skip to first non whitespace character
+
+        clear_whitespaces(line);
+
+        char* rest  = line;
+        char* token = NULL;
+        while ((token = strtok_r(rest, ",", &rest))){
+            clear_whitespaces(token);
+            // if token is an u8 immediate
+            if (token[0] == '#'){
+                size++;
+
+                if (!calc_size){
+                    // FIXME: bytebuffer append the byte
+                }
+            }
+
+            // if token is a string
+            if (token[0] == '"'){
+                size = xasm_escape_string(token);
+
+                if (!calc_size){
+                    // FIXME: append string to bytebuffer
+                }
+            }
+        }
+        
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        return size;
+    }
+
+    // check if line is a valid instruction
+    if (sscanf(line, "%127s %127[^,\t\n], %127[^\t\n]", opcds, arg1s, arg2s) >= 1){
+        // to check if instruction was
+        // correct for pass 1
+
+        opcd = xasm_resolve_opcode(opcds);
+        size += 1; // size of opcode in bytes
+
+        size += xasm_resolve_argument(arg1, xasm->symtab, arg1s, calc_size); // get size of arguments
+        size += xasm_resolve_argument(arg2, xasm->symtab, arg2s, calc_size); // get size of arguments
+
+    } else {
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        xasm_error(E_INVALID_SYNTAX, (u32) __LINE__ - 16, (char*) __PRETTY_FUNCTION__, "Invalid Instruction \"%s\"", line);
+    }
+
+    fini_arg(arg1); arg1 = NULL;
+    fini_arg(arg2); arg2 = NULL;
+
+    return size;
+}
+
 
 u32 xasm_assemble(xasm* xasm){
     // assemble the xvm source
@@ -263,8 +298,13 @@ u32 xasm_assemble(xasm* xasm){
 
         // instruction is valid
         // increment address
-        address += xasm_assemble_line(NULL, temp); // get size
+        address += xasm_assemble_line(xasm, temp, true); // get size
     }
+
+    rewind(xasm->ifile);    // rewind the file
+    address = 0;            // reset address
+
+
 
     free(line);
     line = NULL; temp = NULL; size = 0;
@@ -272,52 +312,6 @@ u32 xasm_assemble(xasm* xasm){
     display_symtab(xasm->symtab);
     return E_OK;
 }
-
-u32 xasm_assemble_line(xasm* xasm, char* line){
-    // assemble one line
-
-    char opcds[128] = {0};
-    char arg1s[128] = {0};
-    char arg2s[128] = {0};
-
-    u32 opcd = 0;
-    arg* arg1 = init_arg();
-    arg* arg2 = init_arg();
-
-    if (sscanf(line, "%127s %127[^,\t\n], %127[^\t\n]", opcds, arg1s, arg2s) >= 1){
-        // to check if instruction was
-        // correct for pass 1
-        // return size if xasm == NULL
-
-        if (xasm == NULL) {
-            // calculate size
-        }
-
-        opcd = xasm_resolve_opcode(opcds);
-        if (opcd == E_ERR ||
-            xasm_resolve_argument(arg1, xasm->symtab, arg1s) == E_ERR ||
-            xasm_resolve_argument(arg2, xasm->symtab, arg2s) == E_ERR
-        ) {
-            fini_arg(arg1); arg1 = NULL;
-            fini_arg(arg2); arg2 = NULL;
-            return E_ERR;
-        }
-
-        printf("arg1s: \"%s\"\t", arg1s); disp_arg(arg1);
-        printf("arg2s: \"%s\"\t", arg2s); disp_arg(arg2);
-
-    } else {
-        fini_arg(arg1); arg1 = NULL;
-        fini_arg(arg2); arg2 = NULL;
-        return E_ERR;
-    }
-
-    fini_arg(arg1); arg1 = NULL;
-    fini_arg(arg2); arg2 = NULL;
-
-    return E_OK;
-}
-
 
 int main(int argc, char* argv[]){
 
