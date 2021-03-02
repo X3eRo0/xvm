@@ -6,6 +6,7 @@
 #define XVM_SYMBOLS_H
 
 #include "const.h"
+#include "sections.h"
 
 /*
 *
@@ -40,23 +41,14 @@ typedef struct sym_entry_t {
 typedef struct symtab_t {
 
     sym_entry*	symbols; // head of symbol table
-    u32         size;
+    u32         n_symbols;
 
 } symtab;
 
-typedef struct binary_t {
-
-    u32 x_magic; // xvm magic bytes
-    u32 x_entry; // entry point
-    u32 x_nsect; // number of sections
-
-
-} binary;
-
-// binary parsing related functions
 
 /* ****************************** SYM_ENTRY ***************************** */
 sym_entry* init_sym_entry();
+u32 set_sym_entry(sym_entry* x_sym_entry, char* name, u32 addr);
 u32 display_sym_entry(sym_entry* x_sym_entry);
 u32 fini_sym_entry(sym_entry* x_sym_entry);
 
@@ -67,6 +59,7 @@ u32 fini_sym_entry(sym_entry* x_sym_entry);
 symtab* init_symtab();
 u32 add_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr);
 u32 del_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr);
+u32 write_symtab_to_file(symtab* x_symtab, section* sections, FILE* file);
 u32 resolve_symbol_addr(symtab* x_symtab, char* symbol_name);
 char* resolve_symbol_name(symtab* x_symtab, u32 symbol_addr);
 u32 display_symtab(symtab* x_symtab);

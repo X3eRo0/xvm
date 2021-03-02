@@ -23,6 +23,14 @@ sym_entry* init_sym_entry() {
     return x_sym_entry;
 }
 
+u32 set_sym_entry(sym_entry* x_sym_entry, char* name, u32 addr){
+    x_sym_entry->name = strdup(name);
+    x_sym_entry->addr = addr;
+    x_sym_entry->next = NULL;
+
+    return E_OK;
+}
+
 u32 display_sym_entry(sym_entry* x_sym_entry) {
     // print symbol entry
 
@@ -68,7 +76,7 @@ symtab* init_symtab() {
     }
 
     x_symtab->symbols = NULL;
-    x_symtab->size = 0;
+    x_symtab->n_symbols = 0;
 
     return x_symtab;
 }
@@ -76,15 +84,11 @@ symtab* init_symtab() {
 u32 add_symbol(symtab * x_symtab, char* symbol_name, u32 symbol_addr) {
     // insert new symbol entry in symbol table
 
-    x_symtab->size++;
+    x_symtab->n_symbols++;
 
     if (x_symtab->symbols == NULL){
         x_symtab->symbols = init_sym_entry();
-        x_symtab->symbols->name = (char*)malloc(strlen(symbol_name) + 1);
-        strncpy(x_symtab->symbols->name, symbol_name, strlen(symbol_name) + 1);
-        x_symtab->symbols->addr = symbol_addr;
-        x_symtab->symbols->next = NULL;
-
+        set_sym_entry(x_symtab->symbols, symbol_name, symbol_addr);
         return E_OK;
     }
 
@@ -96,10 +100,22 @@ u32 add_symbol(symtab * x_symtab, char* symbol_name, u32 symbol_addr) {
     }
 
     temp->next = init_sym_entry();
-    temp->next->name = (char*)malloc(strlen(symbol_name) + 1);
-    strncpy(temp->next->name, symbol_name, strlen(symbol_name) + 1);
-    temp->next->addr = symbol_addr;
-    temp->next->next = NULL;
+    set_sym_entry(temp->next, symbol_name, symbol_addr);
+
+    return E_OK;
+}
+
+u32 write_symtab_to_file(symtab* x_symtab, section* sections, FILE* file){
+
+    section_entry* data_s = find_section_entry_by_name(sections, ".data");
+    sym_entry* temp = x_symtab->symbols;
+
+    while (temp != NULL){
+        fwrite(&data_s->indx, sizeof(u32), 1, file); // wrote the offset into section
+        fwrite(&temp->addr, sizeof(u32), 1, file);   // wrote the symbol address
+        memcpy_to_buffer(data_s, temp->name, strlen(temp->name) + 1);
+        temp = temp->next;
+    }
 
     return E_OK;
 }
@@ -108,7 +124,7 @@ u32 del_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr) {
     // delete a symbol entry from symbol table
     // using symbol name and address
 
-    x_symtab->size--;
+    x_symtab->n_symbols--;
 
     // temp entry to traverse symbol table
     sym_entry* temp = x_symtab->symbols;
@@ -120,9 +136,9 @@ u32 del_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr) {
     // matches the symbol_name argument
 
     while (temp != NULL) {
-        if (   !strncmp(temp->name, symbol_name, s_len)
+        if (!strncmp(temp->name, symbol_name, s_len)
                && temp->addr == symbol_addr
-                ) {
+            ) {
             break;
         }
         prev = temp;
@@ -219,18 +235,14 @@ u32 fini_symtab(symtab* x_symtab) {
     sym_entry *temp = x_symtab->symbols;
     sym_entry *prev = NULL;
 
-    do {
-
+    while (temp != NULL){
         prev = temp;
         temp = temp->next;
         fini_sym_entry(prev);
-
-    } while (temp != NULL);
-
+    }
 
     x_symtab->symbols = NULL;
-
-    free(x_symtab);
+    free(x_symtab); x_symtab = NULL;
     return E_OK;
 
 }

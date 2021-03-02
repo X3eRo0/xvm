@@ -12,6 +12,7 @@ xasm* init_xasm(){
     t_xasm->ifile = NULL;
     t_xasm->ofile = NULL;
     t_xasm->symtab = init_symtab();
+    t_xasm->header = init_exe_header();
 
     return t_xasm;
 
@@ -22,6 +23,9 @@ u32 open_ifile(xasm* xasm, char * file){
     // open input file
 
     xasm->ifile = fopen(file, "rb");
+    if (!xasm->ifile){
+        xasm_error(E_NOFILE, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "No such file \"%s\" found", file);
+    }
     return E_OK;
 
 }
@@ -30,7 +34,10 @@ u32 open_ofile(xasm* xasm, char * file){
 
     // open output file
 
-    xasm->ofile = fopen(file, "rb");
+    xasm->ofile = fopen(file, "wb");
+    if (!xasm->ifile){
+        xasm_error(E_NOFILE, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "Cannot create \"%s\"", file);
+    }
     return E_OK;
 
 }
@@ -39,7 +46,9 @@ u32 close_ifile(xasm* xasm){
 
     // close input file
 
-    fclose(xasm->ifile);
+    if (xasm->ifile) {
+        fclose(xasm->ifile);
+    }
     return E_OK;
 
 }
@@ -48,9 +57,33 @@ u32 close_ofile(xasm* xasm){
 
     // close output file
 
-    fclose(xasm->ofile);
+    if (xasm->ofile) {
+        fclose(xasm->ofile);
+    }
     return E_OK;
 
+}
+
+u32 get_total_size(xasm* xasm){
+
+    section_entry* sec_temp = xasm->sections->sections;
+    sym_entry* sym_temp = xasm->symtab->symbols;
+
+    u32 total = XVM_HDR_SIZE + xasm->symtab->n_symbols * sizeof(u32) * 2;
+
+    while (sym_temp != NULL){
+        total += strlen(sym_temp->name) + 1;
+        sym_temp = sym_temp->next;
+    }
+
+    while (sec_temp != NULL){
+        total += strlen(sec_temp-> name) + 1;
+        total += sizeof(u32) * 2; // for size and flags
+        total += sec_temp->indx; // content of that section
+        sec_temp = sec_temp->next;
+    }
+
+    return total;
 }
 
 u32 fini_xasm(xasm* xasm){
@@ -60,6 +93,8 @@ u32 fini_xasm(xasm* xasm){
     close_ifile(xasm); xasm->ifile = NULL;
     close_ofile(xasm); xasm->ofile = NULL;
     fini_symtab(xasm->symtab); xasm->symtab = NULL;
+    fini_section(xasm->sections); xasm->sections = NULL;
+    fini_exe_header(xasm->header); xasm->header = NULL;
 
     free(xasm); xasm = NULL;
 
@@ -87,9 +122,8 @@ u32 get_sign(char s){
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err34-c"
 u32 xasm_escape_string(char* unescaped) {
-    char* escaped = ++unescaped;
-    char* writeptr = unescaped;
-    u32 size = 1;
+    char* writeptr = unescaped++;
+    u32 size = 0;
     while (unescaped[0] != '"'){
         if (unescaped[0] == '\\'){
             // if an escape sequence is found
@@ -124,9 +158,11 @@ u32 xasm_escape_string(char* unescaped) {
                 }
                 default: xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "Unknown escape sequence : \"\\%c\"", unescaped[1]);
             };
-            unescaped++;
+            unescaped += 2; writeptr++; size++;
+        } else {
+            *writeptr = *unescaped;
+            unescaped++; writeptr++; size++; // normal bytes just increment
         }
-        unescaped++; writeptr++; size++; // normal bytes just increment
     }
     writeptr[0] = '\x00';   // terminate the string at the ending quote (")
     return size;            // return the size of string or bytes

@@ -10,6 +10,9 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include "../common/symbols.h"
+#include "../common/sections.h"
+#include "../common/loader.h"
+
 
 #define XVM_NINSTR  5
 #define XVM_NREGS   7
@@ -61,6 +64,7 @@ typedef enum {
     E_INVALID_IMMEDIATE,
     E_INVALID_SYNTAX,
     E_INVALID_OPCODE,
+    E_NOFILE,
 
 } xasm_error_id;
 
@@ -85,16 +89,27 @@ typedef enum {
                         } \
                     }
 
+#define skip_to_whitespace(line) \
+                    while ((line)[0] != '\x00'){ \
+                        if (!is_white_space(line)){\
+                             (line)++;\
+                        } else { \
+                            break; \
+                        } \
+                    }
+
+
 #define is_digit(ch)  ((ch) >= '0') && ((ch) <= '9')
 #define is_hex(ch)  (is_digit(ch) || ((ch) >= 'a' && (ch) <= 'f') || ((ch) >= 'A' && (ch) <= 'F'))
 #define is_binary(ch)  ((ch) == '0' || (ch) == '1')
 
 typedef struct xasm_t {
 
-    FILE*   ifile;  // input file
-    FILE*   ofile;  // output file
-    symtab* symtab; // symbol table
-
+    FILE*       ifile;     // input file
+    FILE*       ofile;     // output file
+    symtab*     symtab;    // symbol table
+    section*    sections;  // sections
+    exe_header* header;
 } xasm;
 
 typedef struct arg_t {
@@ -107,6 +122,7 @@ typedef struct arg_t {
 
 } arg;
 
+char* section_name; // only global variable to keep track of section name
 
 xasm*   init_xasm();
 arg*    init_arg();
@@ -127,6 +143,7 @@ u32     open_ofile(xasm* xasm, char* file);
 u32     close_ifile(xasm* xasm);
 u32     close_ofile(xasm* xasm);
 u32     fini_xasm(xasm* xasm);
+u32     get_total_size(xasm* xasm);
 char*   strchrnul(const char*, int c);
 u32     xasm_error(u32 error_id, u32 line, char* func, char* msg, ...);
 #endif //XVM_XASM_H

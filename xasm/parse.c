@@ -142,7 +142,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
             }
 
             arg->arg_type |= arg_pointer;   // this class of argument is pointer
-            // with or without (offset & register)
+                                            // with or without (offset & register)
         } else {
             xasm_error(E_INVALID_SYNTAX, (u32)__LINE__ - 1, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", args);
         }
@@ -178,12 +178,61 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
     char arg1s[128] = {0};
     char arg2s[128] = {0};
 
+    char *sec_name = section_name;
+
     u32 size = 0; // size of instruction
     u32 opcd = 0;
     arg* arg1 = init_arg();
     arg* arg2 = init_arg();
 
-    // check if line is a valid db or ascii
+    if (!strncmp(line, "section", 7)){ // defining section
+        line += 7; // "section" skip these 7 bytes
+        // skip to first non whitespace character
+
+        clear_whitespaces(line);
+        sec_name = line;
+        skip_to_whitespace(line);
+        *line++ = '\x00';
+        clear_whitespaces(line);
+
+        char* flag_s = line;        // string for section flags
+        skip_to_whitespace(flag_s)  // NULL terminate at first whitespace
+        *flag_s++ = '\x00';         // after the immediate
+        clear_whitespaces(flag_s);  // skip the whitespaces
+
+        u32 section_flag = 0; // section flags
+        u32 section_size = 0; // section size
+
+        section_size = xasm_resolve_number(line);
+
+        for (;flag_s[0] != '\x00' && flag_s[0] != '\x00';){
+            if (flag_s[0] == '|' || is_white_space(flag_s)){
+                flag_s++;
+            }
+
+            if ((flag_s[0] | ' ') == 'r'){
+                section_flag |= PERM_READ;
+                flag_s++;
+            }
+
+            if ((flag_s[0] | ' ') == 'w'){
+                section_flag |= PERM_WRITE;
+                flag_s++;
+            }
+
+            if ((flag_s[0] | ' ') == 'x'){
+                section_flag |= PERM_EXEC;
+                flag_s++;
+            }
+        }
+
+        section_name = add_section(xasm->sections, sec_name, section_size, section_flag);
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        return 0;
+    }
+
+    // check if line is a valid db, dw, dd, ascii command
 
     if (!strncmp(line, "db", 2)){ // db
         line += 2; // "db" skip these 2 bytes
@@ -197,19 +246,11 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
             clear_whitespaces(token);
             // if token is an u8 immediate
             if (token[0] == '#'){
-                size++;
+                size += sizeof(u8);
 
                 if (!calc_size){
-                    // FIXME: bytebuffer append the byte
-                }
-            }
-
-            // if token is a string
-            if (token[0] == '"'){
-                size = xasm_escape_string(token);
-
-                if (!calc_size){
-                    // FIXME: append string to bytebuffer
+                    u32 imm = xasm_resolve_number(token);
+                    write_buffer_to_section_by_name(xasm->sections, section_name, (u8)imm, WRITE_AS_BYTE);
                 }
             }
         }
@@ -218,6 +259,88 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
         fini_arg(arg2); arg2 = NULL;
         return size;
     }
+
+    // check if line is a valid db or ascii
+
+    if (!strncmp(line, "dw", 2)){ // dw
+        line += 2; // "dw" skip these 2 bytes
+        // skip to first non whitespace character
+
+        clear_whitespaces(line);
+
+        char* rest  = line;
+        char* token = NULL;
+        while ((token = strtok_r(rest, ",", &rest))){
+            clear_whitespaces(token);
+            // if token is an u16 immediate
+            if (token[0] == '#'){
+                size += sizeof(u16);
+
+                if (!calc_size){
+                    u32 imm = xasm_resolve_number(token);
+                    write_buffer_to_section_by_name(xasm->sections, section_name, (u16)imm, WRITE_AS_WORD);
+                }
+            }
+        }
+
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        return size;
+    }
+
+    if (!strncmp(line, "dd", 2)){ // dd
+        line += 2; // "dd" skip these 2 bytes
+        // skip to first non whitespace character
+
+        clear_whitespaces(line);
+
+        char* rest  = line;
+        char* token = NULL;
+        while ((token = strtok_r(rest, ",", &rest))){
+            clear_whitespaces(token);
+            // if token is an u32 immediate
+            if (token[0] == '#'){
+                size += sizeof(u32);
+
+                if (!calc_size){
+                    u32 imm = xasm_resolve_number(token);
+                    write_buffer_to_section_by_name(xasm->sections, section_name, (u32)imm, WRITE_AS_DWORD);
+                }
+            }
+        }
+
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        return size;
+    }
+
+    if (!strncmp(line, "ascii", 5)){ // ascii
+        line += 5; // "ascii" skip these 5 bytes
+        // skip to first non whitespace character
+
+        clear_whitespaces(line);
+
+        char* rest  = line;
+        char* token = NULL;
+        while ((token = strtok_r(rest, ",", &rest))){
+            clear_whitespaces(token);
+
+            // if token is a string
+            if (token[0] == '"'){
+                size = xasm_escape_string(token);
+                if (!calc_size){
+                    memcpy_buffer_to_section_by_name(xasm->sections, section_name, token, size + 1); // +1 for null byte
+                }
+            } else {
+                xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", token);
+            }
+        }
+
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        return size;
+    }
+
 
     // check if line is a valid instruction
     if (sscanf(line, "%127s %127[^,\t\n], %127[^\t\n]", opcds, arg1s, arg2s) >= 1){
@@ -229,6 +352,10 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
 
         size += xasm_resolve_argument(arg1, xasm->symtab, arg1s, calc_size); // get size of arguments
         size += xasm_resolve_argument(arg2, xasm->symtab, arg2s, calc_size); // get size of arguments
+
+        if (!calc_size){
+            write_buffer_to_section_by_name(xasm->sections, section_name, (u8)opcd, WRITE_AS_BYTE);
+        }
 
     } else {
         fini_arg(arg1); arg1 = NULL;
@@ -253,6 +380,8 @@ u32 xasm_assemble(xasm* xasm){
     char* newline   = NULL; // pointer to '\n'
     u32 address     = 0;    // for recording addresses
     size_t size     = 0;    // size of line
+
+    section_name = ".text"; // default section
 
     if (xasm == NULL) {
         return E_ERR;
@@ -304,6 +433,35 @@ u32 xasm_assemble(xasm* xasm){
     rewind(xasm->ifile);    // rewind the file
     address = 0;            // reset address
 
+    // second pass
+    while(getline(&line, &size, xasm->ifile) > 0){
+        temp = line;
+
+        while (is_white_space(temp)){
+            temp++;
+        }
+
+        comment = strchrnul(temp, ';');     // find comment
+        label   = strchrnul(temp, ':');     // find label
+        newline = strchrnul(temp, '\n');    // find line end
+
+        // remove any comment or label symbol
+        comment[0]  = '\x00';
+        label[0]    = '\x00';
+        newline[0]  = '\x00';
+
+        if (is_line_empty(temp)){
+            continue;
+        }
+
+        if (label < comment) {
+            continue;
+        }
+
+        // instruction is valid
+        // increment address
+        xasm_assemble_line(xasm, temp, false); // assemble
+    }
 
 
     free(line);

@@ -91,31 +91,88 @@ char* reference(m_map* map_head, u32 addr){
     return (char*)&addr_map->m_buff[offset];
 }
 
-u8 dereference_byte(m_map* map_head, u32 addr){
+u8 read_byte(m_map* map_head, u32 addr, u32 opt_perm){
     // dereference addr as a byte ptr from virtual memory
 
     m_map* addr_map = get_map_by_addr(map_head, addr);
+
+    if (addr_map->m_prot & ~(PERM_READ | opt_perm)){
+        // FIXME: Segmentation Fault
+    }
+
     u32 offset = addr - addr_map->v_addr;
 
-    return (u8)addr_map->m_buff[offset];
+    return (u8)*(u8*)(&addr_map->m_buff[offset]);
 }
 
-u16 dereference_word(m_map* map_head, u32 addr){
+u16 read_word(m_map* map_head, u32 addr, u32 opt_perm){
     // dereference addr as a word ptr from virtual memory
 
     m_map* addr_map = get_map_by_addr(map_head, addr);
+
+    if (addr_map->m_prot & ~(PERM_READ | opt_perm)){
+        // FIXME: Segmentation Fault
+    }
+
     u32 offset = addr - addr_map->v_addr;
 
-    return (u16)*(u16*)&addr_map->m_buff[offset];
+    return (u16)*(u16*)(&addr_map->m_buff[offset]);
 }
 
-u32 dereference_dword(m_map* map_head, u32 addr){
+u32 read_dword(m_map* map_head, u32 addr, u32 opt_perm){
     // dereference addr as a dword ptr from virtual memory
 
     m_map* addr_map = get_map_by_addr(map_head, addr);
+
+    if (addr_map->m_prot & ~(PERM_READ | opt_perm)){
+        // FIXME: Segmentation Fault
+    }
+
     u32 offset = addr - addr_map->v_addr;
 
-    return (u32)*(u32*)&addr_map->m_buff[offset];
+    return (u32)*(u32*)(&addr_map->m_buff[offset]);
+}
+
+u8 write_byte(m_map* map_head, u32 addr, u8 byte){
+    // write byte at address
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+
+    if (addr_map->m_prot & ~PERM_WRITE){
+        // FIXME: Segmentation Fault
+    }
+
+    u32 offset = addr - addr_map->v_addr;
+
+    return *(u8*)(&addr_map->m_buff[offset]) = byte;
+}
+
+u16 write_word(m_map* map_head, u32 addr, u16 word){
+    // write word at address
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+
+    if (addr_map->m_prot & ~PERM_WRITE){
+        // FIXME: Segmentation Fault
+    }
+
+    u32 offset = addr - addr_map->v_addr;
+
+    return *(u16*)(&addr_map->m_buff[offset]) = word;
+}
+
+u32 write_dword(m_map* map_head, u32 addr, u32 dword){
+    // write dword at address
+
+    m_map* addr_map = get_map_by_addr(map_head, addr);
+
+    if (addr_map->m_prot & ~PERM_WRITE){
+        // FIXME: Segmentation Fault
+    }
+
+    u32 offset = addr - addr_map->v_addr;
+
+    return *(u32*)(&addr_map->m_buff[offset]) = dword;
 }
 
 u32 vmmap(m_map* map_head) {
@@ -131,21 +188,21 @@ u32 vmmap(m_map* map_head) {
                map_head->v_addr + map_head->v_size
         );
 
-        if (map_head->m_prot & PROT_READ) {
+        if (map_head->m_prot & PERM_READ) {
             printf("r");
         }
         else {
             printf("-");
         }
 
-        if (map_head->m_prot & PROT_WRITE) {
+        if (map_head->m_prot & PERM_WRITE) {
             printf("w");
         }
         else {
             printf("-");
         }
 
-        if (map_head->m_prot & PROT_EXEC) {
+        if (map_head->m_prot & PERM_EXEC) {
             printf("x");
         }
         else {
