@@ -31,14 +31,14 @@ u32 set_sym_entry(sym_entry* x_sym_entry, char* name, u32 addr){
     return E_OK;
 }
 
-u32 display_sym_entry(sym_entry* x_sym_entry) {
+u32 show_sym_entry_info(sym_entry* x_sym_entry) {
     // print symbol entry
 
     if(x_sym_entry == NULL || x_sym_entry->name == NULL){
         return E_ERR;
     }
 
-    printf("%.8x %s\n", x_sym_entry->addr, x_sym_entry->name);
+    printf(KBLU "#0x%.8x    " KGRN "%s\n" KNRM, x_sym_entry->addr, x_sym_entry->name);
     return E_OK;
 
 }
@@ -214,14 +214,17 @@ char * resolve_symbol_name(symtab* x_symtab, u32 symbol_addr) {
     return temp->name; // return symbol name
 }
 
-u32 display_symtab(symtab* x_symtab) {
+u32 show_symtab_info(symtab* x_symtab) {
     // print the symbol table
+
+    printf("\n[" KGRN "+" KNRM "] Dumping SymTab\n");
+    printf("  Address      Symbol\n");
 
     // temp entry to traverse symbol table
     sym_entry* temp = x_symtab->symbols;
 
     while (temp != NULL) {
-        display_sym_entry(temp);
+        show_sym_entry_info(temp);
         temp = temp->next;
     }
 

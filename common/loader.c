@@ -32,28 +32,31 @@ u32 write_exe_header(exe_header* header, FILE* ofile){
     return E_OK;
 }
 
-u32 xvm_bin_read_exe_header(xvm_bin* bin, FILE* ifile){
 
-    if (!bin->header) {
+u32 xvm_bin_read_exe_header(xvm_bin* bin){
+
+    if (!bin->x_header) {
         return E_ERR;
     }
 
-    fseek(ifile, 0, SEEK_SET); // go to the beginning
-    fread(&bin->header->x_magic,    1, sizeof(u32), ifile);
-    fread(&bin->header->x_entry,    1, sizeof(u32), ifile);
-    fread(&bin->header->x_dbgsym,   1, sizeof(u32), ifile);
-    fread(&bin->header->x_szfile,   1, sizeof(u32), ifile);
-    fread(&bin->header->x_sections, 1, sizeof(u32), ifile);
+    fseek(bin->x_file, 0, SEEK_SET); // go to the beginning
+    fread(&bin->x_header->x_magic,    1, sizeof(u32), bin->x_file);
+    fread(&bin->x_header->x_entry,    1, sizeof(u32), bin->x_file);
+    fread(&bin->x_header->x_dbgsym,   1, sizeof(u32), bin->x_file);
+    fread(&bin->x_header->x_szfile,   1, sizeof(u32), bin->x_file);
+    fread(&bin->x_header->x_sections, 1, sizeof(u32), bin->x_file);
 
     return E_OK;
 }
+
+
 
 u32 xvm_bin_show_exe_info(xvm_bin* bin){
 
     if (!bin) {
         return E_ERR;
     }
-    show_exe_info(bin->header);
+    show_exe_info(bin->x_header);
     return E_OK;
 }
 
@@ -88,16 +91,120 @@ u32 fini_exe_header(exe_header* header){
 xvm_bin* init_xvm_bin(){
     // create binary structure
     xvm_bin* bin = (xvm_bin*) malloc(sizeof(xvm_bin));
-    bin->header     = init_exe_header();
-    bin->symtab     = NULL; // must be set by the assembler later
+    bin->x_header     = init_exe_header();
+    bin->x_symtab     = init_symtab();
+    bin->x_section    = init_section();
+    bin->x_file       = NULL;
 
     return bin;
 }
 
 
+u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
+
+    if (!bin){
+        return E_ERR;
+    }
+
+    xvm_bin_open_file(bin, filename);
+    xvm_bin_read_exe_header(bin);
+
+    struct raw_symtab_t {
+        u32 offset;
+        u32 address;
+    } * raw_symtab = (struct raw_symtab_t*) malloc(sizeof(struct raw_symtab_t) * bin->x_header->x_dbgsym);
+
+    // read raw symtab with offset instead os the string
+    for (u32 i = 0; i < bin->x_header->x_dbgsym; i++){
+        fread(&raw_symtab[i].offset, sizeof(u32), 1, bin->x_file);
+        fread(&raw_symtab[i].address, sizeof(u32), 1, bin->x_file);
+    }
+
+    // read sections
+    section_entry* section = NULL;
+    char*   section_name = NULL;
+    size_t  read_size    = 0;
+    u32     section_size = 0;
+    u32     section_flag = 0;
+    u32     section_indx = 0;
+
+    for (u32 i = 0; i < bin->x_header->x_sections; i++) {
+
+        // read section name
+        if (getdelim(&section_name, &read_size, '\x00', bin->x_file) <= 0) {
+            printf("xinfo: error cannot read section or corrupted file\n");
+            exit(-1);
+        }
+
+        fread(&section_size, sizeof(u32), 1, bin->x_file);
+        fread(&section_flag, sizeof(u32), 1, bin->x_file);
+        fread(&section_indx, sizeof(u32), 1, bin->x_file);
+
+        add_section(bin->x_section, section_name, section_size, section_flag);
+
+        section = find_section_entry_by_name(bin->x_section, section_name);
+
+        // after allocating the section read and fill the bytes
+        for (u32 j = 0; j < section_indx; j++){
+            write_byte_to_buffer(section, fgetc(bin->x_file));
+        }
+    }
+
+    free(section_name); section_name = NULL;
+
+    // after reading bytes rebuild the symtab
+    // by using strings in .data section
+
+    section = find_section_entry_by_name(bin->x_section, ".data");
+
+    for (u32 j = 0; j < bin->x_header->x_dbgsym; j++){
+        add_symbol(bin->x_symtab, &section->buff[raw_symtab[j].offset], raw_symtab[j].address);
+    }
+
+    free(raw_symtab); raw_symtab = NULL;
+    return E_OK;
+}
+
+u32 xvm_bin_open_file(xvm_bin* bin, char* filename){
+
+    if (!bin){
+        return E_ERR;
+    }
+
+    if (bin->x_file){
+        xvm_bin_close_file(bin);
+    }
+
+    bin->x_file = fopen(filename, "r");
+
+    if (!bin->x_file){
+        return E_ERR;
+    }
+
+    return E_OK;
+}
+
+u32 xvm_bin_close_file(xvm_bin* bin){
+
+    if (!bin){
+        return E_ERR;
+    }
+
+    if (bin->x_file){
+        fclose(bin->x_file); bin->x_file = NULL;
+    }
+
+    return E_OK;
+}
+
+
 u32 fini_xvm_bin(xvm_bin* bin) {
     // destroy binary structure
-    fini_exe_header(bin->header);
+    fini_exe_header(bin->x_header);
+    fini_symtab(bin->x_symtab);
+    fini_section(bin->x_section);
+    xvm_bin_close_file(bin);
+
     memset(bin, 0, sizeof(xvm_bin));
     free(bin); bin = NULL;
     return E_OK;

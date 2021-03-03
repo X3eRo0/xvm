@@ -19,9 +19,9 @@
 
 typedef enum {
 
-    PERM_READ = 0,
-    PERM_WRITE = 1,
-    PERM_EXEC = 2,
+    PERM_READ = 1,
+    PERM_WRITE = 2,
+    PERM_EXEC = 4,
 
 } mem_perms;
 

@@ -49,7 +49,7 @@ typedef struct symtab_t {
 /* ****************************** SYM_ENTRY ***************************** */
 sym_entry* init_sym_entry();
 u32 set_sym_entry(sym_entry* x_sym_entry, char* name, u32 addr);
-u32 display_sym_entry(sym_entry* x_sym_entry);
+u32 show_sym_entry_info(sym_entry* x_sym_entry);
 u32 fini_sym_entry(sym_entry* x_sym_entry);
 
 /* ********************************************************************** */
@@ -62,7 +62,7 @@ u32 del_symbol(symtab* x_symtab, char* symbol_name, u32 symbol_addr);
 u32 write_symtab_to_file(symtab* x_symtab, section* sections, FILE* file);
 u32 resolve_symbol_addr(symtab* x_symtab, char* symbol_name);
 char* resolve_symbol_name(symtab* x_symtab, u32 symbol_addr);
-u32 display_symtab(symtab* x_symtab);
+u32 show_symtab_info(symtab* x_symtab);
 u32 fini_symtab(symtab * x_symtab);
 
 /* ********************************************************************** */

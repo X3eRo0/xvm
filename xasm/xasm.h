@@ -122,7 +122,6 @@ typedef struct arg_t {
 
 } arg;
 
-char* section_name; // only global variable to keep track of section name
 
 xasm*   init_xasm();
 arg*    init_arg();
@@ -136,12 +135,12 @@ u32     xasm_resolve_register_id(char* reg_s);
 u32     xasm_resolve_opcode(char* mnemonic);
 u32     xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size);
 char*   xasm_resolve_mnemonic(u32 opcode);
-u32     xasm_assemble(xasm* xasm);
-u32     xasm_assemble_line(xasm* xasm, char* line, bool calc_size);
-u32     open_ifile(xasm* xasm, char* file);
-u32     open_ofile(xasm* xasm, char* file);
-u32     close_ifile(xasm* xasm);
-u32     close_ofile(xasm* xasm);
+u32     xasm_assemble(xasm* xasm, section_entry* current_section_entry);
+u32     xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_entry, bool calc_size);
+u32     xasm_open_ifile(xasm* xasm, char* file);
+u32     xasm_open_ofile(xasm* xasm, char* file);
+u32     xasm_close_ifile(xasm* xasm);
+u32     xasm_close_ofile(xasm* xasm);
 u32     fini_xasm(xasm* xasm);
 u32     get_total_size(xasm* xasm);
 char*   strchrnul(const char*, int c);

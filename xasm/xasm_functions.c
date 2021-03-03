@@ -18,7 +18,7 @@ xasm* init_xasm(){
 
 }
 
-u32 open_ifile(xasm* xasm, char * file){
+u32 xasm_open_ifile(xasm* xasm, char * file){
 
     // open input file
 
@@ -30,7 +30,7 @@ u32 open_ifile(xasm* xasm, char * file){
 
 }
 
-u32 open_ofile(xasm* xasm, char * file){
+u32 xasm_open_ofile(xasm* xasm, char * file){
 
     // open output file
 
@@ -42,7 +42,7 @@ u32 open_ofile(xasm* xasm, char * file){
 
 }
 
-u32 close_ifile(xasm* xasm){
+u32 xasm_close_ifile(xasm* xasm){
 
     // close input file
 
@@ -53,7 +53,7 @@ u32 close_ifile(xasm* xasm){
 
 }
 
-u32 close_ofile(xasm* xasm){
+u32 xasm_close_ofile(xasm* xasm){
 
     // close output file
 
@@ -78,8 +78,8 @@ u32 get_total_size(xasm* xasm){
 
     while (sec_temp != NULL){
         total += strlen(sec_temp-> name) + 1;
-        total += sizeof(u32) * 2; // for size and flags
-        total += sec_temp->indx; // content of that section
+        total += sizeof(u32) * 3; // for size, flag and indx
+        total += sec_temp->indx;  // content of that section
         sec_temp = sec_temp->next;
     }
 
@@ -90,8 +90,8 @@ u32 fini_xasm(xasm* xasm){
 
     // finish xvm assembler
 
-    close_ifile(xasm); xasm->ifile = NULL;
-    close_ofile(xasm); xasm->ofile = NULL;
+    xasm_close_ifile(xasm); xasm->ifile = NULL;
+    xasm_close_ofile(xasm); xasm->ofile = NULL;
     fini_symtab(xasm->symtab); xasm->symtab = NULL;
     fini_section(xasm->sections); xasm->sections = NULL;
     fini_exe_header(xasm->header); xasm->header = NULL;

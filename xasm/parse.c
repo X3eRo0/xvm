@@ -171,14 +171,14 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
     return E_ERR;
 }
 
-u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
+u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_entry, bool calc_size){
     // assemble one line
 
     char opcds[128] = {0};
     char arg1s[128] = {0};
     char arg2s[128] = {0};
 
-    char *sec_name = section_name;
+    char * temp = NULL;
 
     u32 size = 0; // size of instruction
     u32 opcd = 0;
@@ -190,9 +190,10 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
         // skip to first non whitespace character
 
         clear_whitespaces(line);
-        sec_name = line;
+        temp = line;
         skip_to_whitespace(line);
         *line++ = '\x00';
+        *current_section_entry = find_section_entry_by_name(xasm->sections, temp);
         clear_whitespaces(line);
 
         char* flag_s = line;        // string for section flags
@@ -206,7 +207,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
         section_size = xasm_resolve_number(line);
 
         for (;flag_s[0] != '\x00' && flag_s[0] != '\x00';){
-            if (flag_s[0] == '|' || is_white_space(flag_s)){
+            if (flag_s[0] == '-' || is_white_space(flag_s)){
                 flag_s++;
             }
 
@@ -226,7 +227,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
             }
         }
 
-        section_name = add_section(xasm->sections, sec_name, section_size, section_flag);
+        add_section(xasm->sections, (*current_section_entry)->name, section_size, section_flag);
         fini_arg(arg1); arg1 = NULL;
         fini_arg(arg2); arg2 = NULL;
         return 0;
@@ -250,7 +251,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, section_name, (u8)imm, WRITE_AS_BYTE);
+                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u8)imm, WRITE_AS_BYTE);
                 }
             }
         }
@@ -278,7 +279,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, section_name, (u16)imm, WRITE_AS_WORD);
+                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u16)imm, WRITE_AS_WORD);
                 }
             }
         }
@@ -304,7 +305,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, section_name, (u32)imm, WRITE_AS_DWORD);
+                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u32)imm, WRITE_AS_DWORD);
                 }
             }
         }
@@ -329,7 +330,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
             if (token[0] == '"'){
                 size = xasm_escape_string(token);
                 if (!calc_size){
-                    memcpy_buffer_to_section_by_name(xasm->sections, section_name, token, size + 1); // +1 for null byte
+                    memcpy_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, token, size + 1); // +1 for null byte
                 }
             } else {
                 xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", token);
@@ -354,7 +355,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
         size += xasm_resolve_argument(arg2, xasm->symtab, arg2s, calc_size); // get size of arguments
 
         if (!calc_size){
-            write_buffer_to_section_by_name(xasm->sections, section_name, (u8)opcd, WRITE_AS_BYTE);
+            write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u8)opcd, WRITE_AS_BYTE);
         }
 
     } else {
@@ -370,7 +371,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, bool calc_size){
 }
 
 
-u32 xasm_assemble(xasm* xasm){
+u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
     // assemble the xvm source
 
     char* line      = NULL; // this buffer will be allocated by getline
@@ -381,7 +382,7 @@ u32 xasm_assemble(xasm* xasm){
     u32 address     = 0;    // for recording addresses
     size_t size     = 0;    // size of line
 
-    section_name = ".text"; // default section
+    section_entry* current_section = default_section_entry;
 
     if (xasm == NULL) {
         return E_ERR;
@@ -418,7 +419,7 @@ u32 xasm_assemble(xasm* xasm){
         }
 
         if (label < comment) {
-            add_symbol(xasm->symtab, temp, address); // append the symbol
+            add_symbol(xasm->symtab, temp, current_section->addr); // append the symbol
             temp = ++label;         // process the rest of the string
             if (*temp == '\x00') {  // if the string ends here continue
                 continue;
@@ -427,11 +428,11 @@ u32 xasm_assemble(xasm* xasm){
 
         // instruction is valid
         // increment address
-        address += xasm_assemble_line(xasm, temp, true); // get size
+        current_section->addr += xasm_assemble_line(xasm, temp, &current_section, true); // get size
     }
 
     rewind(xasm->ifile);    // rewind the file
-    address = 0;            // reset address
+    reset_address_of_sections(xasm->sections);
 
     // second pass
     while(getline(&line, &size, xasm->ifile) > 0){
@@ -460,13 +461,12 @@ u32 xasm_assemble(xasm* xasm){
 
         // instruction is valid
         // increment address
-        xasm_assemble_line(xasm, temp, false); // assemble
+        xasm_assemble_line(xasm, temp, &current_section, false); // assemble
     }
 
 
     free(line);
     line = NULL; temp = NULL; size = 0;
 
-    display_symtab(xasm->symtab);
     return E_OK;
 }

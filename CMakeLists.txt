@@ -28,3 +28,13 @@ add_executable(xasm
     common/loader.c
     common/loader.h
 )
+
+add_executable(xinfo
+    xasm/xinfo.c
+    common/loader.c
+    common/loader.h
+    common/symbols.c
+    common/symbols.h
+    common/sections.c
+    common/sections.h
+        )

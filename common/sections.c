@@ -12,6 +12,7 @@ section_entry* init_section_entry(){
     sec_entry->size = 0;
     sec_entry->flag = PERM_READ;
     sec_entry->indx = 0;
+    sec_entry->addr = 0;
     sec_entry->buff = NULL;
     sec_entry->next = NULL;
 
@@ -38,6 +39,7 @@ u32 write_section_entry_to_file(section_entry* sec_entry, FILE* file){
     fwrite(sec_entry->name, sizeof(u8), strlen(sec_entry->name) + 1, file);
     fwrite(&sec_entry->size, sizeof(u32), 1, file);
     fwrite(&sec_entry->flag, sizeof(u32), 1, file);
+    fwrite(&sec_entry->indx, sizeof(u32), 1, file);
     fwrite(sec_entry->buff, sizeof(u8), sec_entry->indx, file);
 
     return E_OK;
@@ -105,8 +107,42 @@ u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 flag){
     sec_entry->size = size;
     sec_entry->flag = flag;
     sec_entry->indx = 0;
+    sec_entry->addr = 0;
     sec_entry->buff = (char*)realloc(sec_entry->buff, size);
     sec_entry->next = NULL;
+
+    return E_OK;
+}
+
+u32 show_section_entry_info(section_entry* sec_entry){
+
+    printf(KGRN "%8s" KNRM, sec_entry->name);
+    printf(KBLU "        #0x%X" KNRM, sec_entry->size);
+    printf(KYEL "    ");
+    if (sec_entry->flag & PERM_READ) {
+        printf("r");
+    }
+    else {
+        printf("-");
+    }
+
+    if (sec_entry->flag & PERM_WRITE) {
+        printf("w");
+    }
+    else {
+        printf("-");
+    }
+
+    if (sec_entry->flag & PERM_EXEC) {
+        printf("x");
+    }
+    else {
+        printf("-");
+    }
+    printf(KNRM "       ");
+
+    printf(KRED "#0x%06X\n" KNRM, sec_entry->indx);
+
 
     return E_OK;
 }
@@ -124,6 +160,7 @@ u32 fini_section_entry(section_entry* sec_entry){
     sec_entry->indx = 0;
     sec_entry->flag = 0;
     sec_entry->size = 0;
+    sec_entry->addr = 0;
     sec_entry->next = NULL;
     free(sec_entry); sec_entry = NULL;
 
@@ -139,7 +176,7 @@ section* init_section(){
     return sec;
 }
 
-char* add_section(section* sec, char* name, u32 size, u32 flag){
+section_entry* add_section(section* sec, char* name, u32 size, u32 flag){
     // add new section to section list
 
     if (sec == NULL) {
@@ -150,7 +187,7 @@ char* add_section(section* sec, char* name, u32 size, u32 flag){
         sec->sections = init_section_entry();
         sec->n_sections++;
         set_section_entry(sec->sections, name, size, flag);
-        return sec->sections->name;
+        return sec->sections;
     }
 
     section_entry* temp = sec->sections;
@@ -166,7 +203,7 @@ char* add_section(section* sec, char* name, u32 size, u32 flag){
             if (temp->flag != flag){
                 temp->flag = flag;
             }
-            return temp->name;
+            return temp;
         }
         prev = temp;
         temp = temp->next;
@@ -176,7 +213,7 @@ char* add_section(section* sec, char* name, u32 size, u32 flag){
     sec->n_sections++;
     set_section_entry(prev->next, name, size, flag);
 
-    return prev->next->name;
+    return prev->next;
 }
 
 section_entry* find_section_entry_by_name(section* sec, char* name){
@@ -190,6 +227,20 @@ section_entry* find_section_entry_by_name(section* sec, char* name){
     }
 
     return NULL;
+}
+
+u32 show_section_info(section* sec){
+
+    printf("[" KGRN "+" KNRM "] Dumping Section Info\n");
+    printf("Section Name      Size    Flags    Size on Disk\n");
+
+    section_entry* temp = sec->sections;
+    while (temp != NULL){
+        show_section_entry_info(temp);
+        temp = temp->next;
+    }
+
+    return E_OK;
 }
 
 u32 write_section_to_file(section* sec, FILE* file){
@@ -252,6 +303,18 @@ u32 memcpy_buffer_to_section_by_name(section* sec, char* name, char* buffer, u32
         temp = temp->next;
     }
     return memcpy_to_buffer(temp, buffer, size);
+}
+
+u32 reset_address_of_sections(section* sec){
+    // reset address member to 0
+
+    section_entry* temp = sec->sections;
+    while (temp != NULL){
+        temp->addr = 0;
+        temp = temp->next;
+    }
+
+    return E_OK;
 }
 
 u32 fini_section(section* sec){

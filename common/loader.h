@@ -23,16 +23,21 @@ typedef struct exe_header_t {
 typedef struct xvm_bin_t {
     // xvm binary structure
 
-    exe_header* header;     // xvm header
-    symtab*     symtab;     // xvm symbols if any
+    exe_header* x_header;     // xvm header
+    symtab*     x_symtab;     // xvm symbols if any
+    section*    x_section;    // xvm sections
+    FILE*       x_file;       // xvm file
 
 } xvm_bin;
 
 xvm_bin*    init_xvm_bin();
 u32         xvm_bin_set_ofile(xvm_bin* bin, FILE* ofile);
 u32         xvm_bin_set_ifile(xvm_bin* bin, FILE* ifile);
-u32         xvm_bin_read_exe_header(xvm_bin* bin, FILE* ifile);
+u32         xvm_bin_read_exe_header(xvm_bin* bin);
 u32         xvm_bin_show_exe_info(xvm_bin* bin);
+u32         xvm_bin_load_file(xvm_bin* bin, char* filename);
+u32         xvm_bin_open_file(xvm_bin* bin, char* filename);
+u32         xvm_bin_close_file(xvm_bin* bin);
 u32         fini_xvm_bin(xvm_bin* bin);
 exe_header* init_exe_header();
 u32         show_exe_info(exe_header * bin);
