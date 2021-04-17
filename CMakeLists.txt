@@ -8,7 +8,6 @@ add_executable(xvm
     xvm/cpu.c
     xvm/cpu.h
     xvm/execute.c
-    xvm/instructions.c
     common/symbols.c
     common/symbols.h
     common/const.h
