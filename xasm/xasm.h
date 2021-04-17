@@ -14,7 +14,7 @@
 #include "../common/loader.h"
 
 
-#define XVM_NINSTR  5
+#define XVM_NINSTR  6
 #define XVM_NREGS   7
 
 
@@ -23,6 +23,8 @@
 typedef enum {
 
     opc_mov,
+    opc_add,
+    opc_nop,
     opc_hlt,
     opc_ret,
     opc_call,
@@ -51,11 +53,10 @@ typedef enum {
 
 typedef enum {
 
-    arg_noarg = 0,      // ret
-    arg_register = 1,   // xor $r0, $r1
-    arg_immediate = 2,  // mov $r0, #0x41414141
-    arg_offset = 4,     // call #offset, jump #offset
-    arg_pointer = 8,    // mov [$r0] $r1; mov [#0x1234], $r1; mov [$r0+#0x1234], $r1
+    ARG_NARG = 0,  // ret
+    ARG_REGD = 1,  // xor $r0, $r1
+    ARG_IMMD = 2,  // mov $r0, #0x41414141
+    ARG_PTRD = 4,  // mov $r1, [$r0]; mov $r1, [#0x1234]; mov $r1, [$r0+#0x1234]
 
 } xasm_argument_t;
 
@@ -99,7 +100,7 @@ typedef enum {
                     }
 
 
-#define is_digit(ch)  ((ch) >= '0') && ((ch) <= '9')
+#define is_digit(ch)  ('0' <= (ch) && (ch) <= '9')
 #define is_hex(ch)  (is_digit(ch) || ((ch) >= 'a' && (ch) <= 'f') || ((ch) >= 'A' && (ch) <= 'F'))
 #define is_binary(ch)  ((ch) == '0' || (ch) == '1')
 

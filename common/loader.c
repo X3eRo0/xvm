@@ -46,6 +46,8 @@ u32 xvm_bin_read_exe_header(xvm_bin* bin){
     fread(&bin->x_header->x_szfile,   1, sizeof(u32), bin->x_file);
     fread(&bin->x_header->x_sections, 1, sizeof(u32), bin->x_file);
 
+    // FIXME: add security checks
+
     return E_OK;
 }
 
@@ -127,6 +129,7 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
     u32     section_size = 0;
     u32     section_flag = 0;
     u32     section_indx = 0;
+    u32     section_addr = 0;
 
     for (u32 i = 0; i < bin->x_header->x_sections; i++) {
 
@@ -137,16 +140,22 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
         }
 
         fread(&section_size, sizeof(u32), 1, bin->x_file);
+        fread(&section_addr, sizeof(u32), 1, bin->x_file);
         fread(&section_flag, sizeof(u32), 1, bin->x_file);
         fread(&section_indx, sizeof(u32), 1, bin->x_file);
 
-        add_section(bin->x_section, section_name, section_size, section_flag);
+        // if size is greater than the limit, adjust the size
+        section_size = section_size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : section_size;
+        section_indx = section_indx > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : section_indx;
+
+        add_section(bin->x_section, section_name, section_size, section_addr, section_flag);
 
         section = find_section_entry_by_name(bin->x_section, section_name);
 
+
         // after allocating the section read and fill the bytes
         for (u32 j = 0; j < section_indx; j++){
-            write_byte_to_buffer(section, fgetc(bin->x_file));
+            append_byte(section, fgetc(bin->x_file));
         }
     }
 
@@ -158,7 +167,7 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
     section = find_section_entry_by_name(bin->x_section, ".data");
 
     for (u32 j = 0; j < bin->x_header->x_dbgsym; j++){
-        add_symbol(bin->x_symtab, &section->buff[raw_symtab[j].offset], raw_symtab[j].address);
+        add_symbol(bin->x_symtab, &section->m_buff[raw_symtab[j].offset], raw_symtab[j].address);
     }
 
     free(raw_symtab); raw_symtab = NULL;

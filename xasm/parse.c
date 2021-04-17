@@ -6,6 +6,7 @@
 
 const char* mnemonics[XVM_NINSTR] = {
         [opc_mov] = "mov",
+        [opc_add] = "add",
         [opc_hlt] = "hlt",
         [opc_ret] = "ret",
         [opc_call] = "call",
@@ -65,7 +66,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
 
     if (args[0] == '\x00'){
         if (!calc_size){
-            arg->arg_type = arg_noarg;
+            arg->arg_type = ARG_NARG;
         }
         return 0; // size of arguments are 0
     }
@@ -74,7 +75,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
 
     if (args[0] == '$'){
         if (!calc_size) {
-            arg->arg_type = arg_register;
+            arg->arg_type = ARG_REGD;
             arg->opt_regid = xasm_resolve_register_id(args);
         }
         return sizeof(u8); // size of register
@@ -84,7 +85,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
 
     if (args[0] == '#') {
         if (!calc_size) {
-            arg->arg_type = arg_immediate;
+            arg->arg_type = ARG_IMMD;
             arg->opt_value = xasm_resolve_number(++args);
         }
         return sizeof(u32); // size of immediate
@@ -99,7 +100,6 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
         u32  sign = 1; // +ve
         u32  size = 0;
 
-
         // this is magic XD
         if (sscanf(args, "[%127[^] +-] %1[+-] %127[^]]]", base, modifier, index) >= 1) {
 
@@ -107,7 +107,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
 
             if (base[0] == '$'){ // register
                 if (!calc_size) {
-                    arg->arg_type |= arg_register;
+                    arg->arg_type |= ARG_REGD;
                     arg->opt_regid = xasm_resolve_register_id(base);
                 }
                 size += sizeof(u8);
@@ -115,7 +115,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
 
             else if (base[0] == '#') { // offset
                 if (!calc_size) {
-                    arg->arg_type |= arg_offset;
+                    arg->arg_type |= ARG_IMMD;
                     arg->opt_offset = sign * xasm_resolve_number(base);
                 }
                 size += sizeof(u32);
@@ -135,14 +135,14 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
 
             if (index[0] != '\x00' && index[0] == '#'){
                 if (!calc_size) {
-                    arg->arg_type |= arg_offset;
+                    arg->arg_type |= ARG_IMMD;
                     arg->opt_offset = sign * xasm_resolve_number(index);
                 }
                 size += sizeof(u32);
             }
 
-            arg->arg_type |= arg_pointer;   // this class of argument is pointer
-                                            // with or without (offset & register)
+            arg->arg_type |= ARG_PTRD;   // this class of argument is pointer
+                                         // with or without (offset & register)
         } else {
             xasm_error(E_INVALID_SYNTAX, (u32)__LINE__ - 1, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", args);
         }
@@ -160,7 +160,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
     // check if argument is label
     for (sym_entry * i = symtab->symbols; i != NULL; i = i->next){
         if (!strncmp(i->name, args, strlen(args))){
-            arg->arg_type |= arg_offset;
+            arg->arg_type |= ARG_IMMD;
             arg->opt_offset = i->addr;
             return E_OK;
         }
@@ -203,8 +203,16 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
         u32 section_flag = 0; // section flags
         u32 section_size = 0; // section size
+        u32 section_addr = 0; // section addr
 
+        section_addr = xasm_resolve_number(line);
+        line = flag_s;
+        skip_to_whitespace(flag_s);
+        *flag_s++ = '\x00';
         section_size = xasm_resolve_number(line);
+        line = flag_s;
+        skip_to_whitespace(line);
+        *line++ = '\x00';
 
         for (;flag_s[0] != '\x00' && flag_s[0] != '\x00';){
             if (flag_s[0] == '-' || is_white_space(flag_s)){
@@ -227,7 +235,13 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
             }
         }
 
-        add_section(xasm->sections, (*current_section_entry)->name, section_size, section_flag);
+        // printf("section addr: 0x%x\n", section_addr);
+
+        if (*current_section_entry != NULL) {
+            add_section(xasm->sections, (*current_section_entry)->m_name, section_size, section_addr, section_flag);
+        } else {
+            *current_section_entry = add_section(xasm->sections, temp, section_size, section_addr, section_flag);
+        }
         fini_arg(arg1); arg1 = NULL;
         fini_arg(arg2); arg2 = NULL;
         return 0;
@@ -251,7 +265,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u8)imm, WRITE_AS_BYTE);
+                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, (u8)imm, WRITE_AS_BYTE);
                 }
             }
         }
@@ -279,7 +293,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u16)imm, WRITE_AS_WORD);
+                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, (u16)imm, WRITE_AS_WORD);
                 }
             }
         }
@@ -305,7 +319,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u32)imm, WRITE_AS_DWORD);
+                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, (u32)imm, WRITE_AS_DWORD);
                 }
             }
         }
@@ -330,7 +344,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
             if (token[0] == '"'){
                 size = xasm_escape_string(token);
                 if (!calc_size){
-                    memcpy_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, token, size + 1); // +1 for null byte
+                    memcpy_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, token, size + 1); // +1 for null byte
                 }
             } else {
                 xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", token);
@@ -354,14 +368,63 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         size += xasm_resolve_argument(arg1, xasm->symtab, arg1s, calc_size); // get size of arguments
         size += xasm_resolve_argument(arg2, xasm->symtab, arg2s, calc_size); // get size of arguments
 
-        if (!calc_size){
-            write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->name, (u8)opcd, WRITE_AS_BYTE);
+        if (!calc_size){ // instruction assembly
+            // write opcode
+            write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u8)opcd, WRITE_AS_BYTE);
+
+            // write mode
+            write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->arg_type | (arg2->arg_type << 0x4), WRITE_AS_BYTE);
+
+            // write arg1
+            if (arg1->arg_type != ARG_NARG){
+                switch(arg1->arg_type){
+                    case ARG_REGD: {
+                        write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_regid, WRITE_AS_BYTE); break;
+                    }
+                    case ARG_IMMD: {
+                        write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_value, WRITE_AS_DWORD); break;
+                    }
+                    default: {
+                        if (arg1->arg_type & ARG_PTRD){
+                            if (arg1->arg_type & ARG_REGD){
+                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_regid, WRITE_AS_BYTE);
+                            }
+                            // if pointer the value is in offset.
+                            if (arg1->arg_type & ARG_IMMD){
+                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_offset, WRITE_AS_DWORD);
+                            }
+                        }
+                    }
+                }
+            }
+            // write arg2
+            if (arg2->arg_type != ARG_NARG){
+                switch(arg2->arg_type){
+                    case ARG_REGD: {
+                        write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_regid, WRITE_AS_BYTE); break;
+                    }
+                    case ARG_IMMD: {
+                        write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_value, WRITE_AS_DWORD); break;
+                    }
+                    default: {
+                        if (arg2->arg_type & ARG_PTRD){
+                            if (arg2->arg_type & ARG_REGD){
+                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_regid, WRITE_AS_BYTE);
+                            }
+                            // if pointer the value is in offset.
+                            if (arg2->arg_type & ARG_IMMD){
+                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_offset, WRITE_AS_DWORD);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
     } else {
         fini_arg(arg1); arg1 = NULL;
         fini_arg(arg2); arg2 = NULL;
-        xasm_error(E_INVALID_SYNTAX, (u32) __LINE__ - 16, (char*) __PRETTY_FUNCTION__, "Invalid Instruction \"%s\"", line);
+        xasm_error(E_INVALID_SYNTAX, (u32) __LINE__ - 16, (char*) __PRETTY_FUNCTION__, " Invalid Instruction \"%s\"", line);
     }
 
     fini_arg(arg1); arg1 = NULL;
@@ -379,7 +442,6 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
     char* comment   = NULL; // pointer to comment
     char* label     = NULL; // pointer to label
     char* newline   = NULL; // pointer to '\n'
-    u32 address     = 0;    // for recording addresses
     size_t size     = 0;    // size of line
 
     section_entry* current_section = default_section_entry;
@@ -419,7 +481,7 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
         }
 
         if (label < comment) {
-            add_symbol(xasm->symtab, temp, current_section->addr); // append the symbol
+            add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
             temp = ++label;         // process the rest of the string
             if (*temp == '\x00') {  // if the string ends here continue
                 continue;
@@ -428,7 +490,7 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
 
         // instruction is valid
         // increment address
-        current_section->addr += xasm_assemble_line(xasm, temp, &current_section, true); // get size
+        current_section->a_size += xasm_assemble_line(xasm, temp, &current_section, true); // get size
     }
 
     rewind(xasm->ifile);    // rewind the file

@@ -1,14 +1,26 @@
-#include "memory.h"
+#include "cpu.h"
 
 int main(int argc, char* argv[]) {
 
-	// bug if the very first section allocated is deleted then that creates a bug
-	// the memory pointed by the head of maps gets deleted.
+	if (argc != 2){
+        fprintf(stderr, "Usage: xvm <bytecode>\n");
+        exit(-1);
+	}
 
-	m_map* mmap = allocate_map(NULL, (char*)".text", argv[0], 0x1000, 0x1337, 0x41414000, PERM_READ | PERM_EXEC, 0x00);
-	allocate_map(mmap, (char*)".data", argv[0], 0x1000, 0x0337, 0x41415000, PERM_READ | PERM_WRITE, 0x00);
-	allocate_map(mmap, (char*)"stack", argv[0], 0x4000, 0x0000, 0xf00db000, PERM_READ | PERM_WRITE, 0x00);
-	vmmap(mmap);
-	fini_m_map(mmap);
-	return 0;
+	xvm_cpu * cpu = init_xvm_cpu();
+	xvm_bin * bin = init_xvm_bin();
+    xvm_bin_load_file(bin, argv[1]);
+    show_exe_info(bin->x_header);
+    show_section_info(bin->x_section);
+    show_symtab_info(bin->x_symtab);
+
+    cpu->regs.pc = bin->x_header->x_entry; // set pc to entry point
+    cpu->regs.sp = XVM_DFLT_SP;
+
+    fde_cpu(cpu, bin);
+
+    fini_xvm_cpu(cpu); cpu = NULL;
+    fini_xvm_bin(bin); bin = NULL;
+
+    return E_OK;
 }

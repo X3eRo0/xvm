@@ -111,7 +111,7 @@ u32 write_symtab_to_file(symtab* x_symtab, section* sections, FILE* file){
     sym_entry* temp = x_symtab->symbols;
 
     while (temp != NULL){
-        fwrite(&data_s->indx, sizeof(u32), 1, file); // wrote the offset into section
+        fwrite(&data_s->m_ofst, sizeof(u32), 1, file); // wrote the offset into section
         fwrite(&temp->addr, sizeof(u32), 1, file);   // wrote the symbol address
         memcpy_to_buffer(data_s, temp->name, strlen(temp->name) + 1);
         temp = temp->next;

@@ -5,8 +5,10 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(xvm
     xvm/xvm.c
-    xvm/memory.c
-    xvm/memory.h
+    xvm/cpu.c
+    xvm/cpu.h
+    xvm/execute.c
+    xvm/instructions.c
     common/symbols.c
     common/symbols.h
     common/const.h

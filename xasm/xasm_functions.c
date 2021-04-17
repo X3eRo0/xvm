@@ -77,9 +77,9 @@ u32 get_total_size(xasm* xasm){
     }
 
     while (sec_temp != NULL){
-        total += strlen(sec_temp-> name) + 1;
+        total += strlen(sec_temp->m_name) + 1;
         total += sizeof(u32) * 3; // for size, flag and indx
-        total += sec_temp->indx;  // content of that section
+        total += sec_temp->a_size;  // content of that section
         sec_temp = sec_temp->next;
     }
 
@@ -172,6 +172,10 @@ u32 xasm_escape_string(char* unescaped) {
 u32 xasm_resolve_number(char* num_s){
     // detect base and return number
 
+    if (*num_s == '\x00' || *num_s == '\n'){
+        return 0;
+    }
+
     if (*num_s == '#'){
         // just in case if we get an
         // input starting with '#'
@@ -189,12 +193,12 @@ u32 xasm_resolve_number(char* num_s){
 
         temp = ++x_ptr; // points to digits
         for (; *temp != '\x00'; temp++){
-            if(!is_digit(*temp)){
-                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid digit", *temp);
+            if(!is_hex(*temp)){
+                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid hex digit", *temp);
             }
         }
 
-        return (u32) strtol(x_ptr, NULL, 16);
+        return (u32) strtoul(x_ptr, NULL, 16);
     }
 
     // octal numbers
@@ -224,6 +228,11 @@ u32 xasm_resolve_number(char* num_s){
 
     // decimal numbers
     if (!z_ptr && !x_ptr && !b_ptr && !o_ptr) {
+        for (temp = num_s + 1; *temp != '\x00'; temp++){
+            if (!is_digit(*temp)){
+                xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid digit", *temp);
+            }
+        }
         return (u32) strtol(num_s, NULL, 10);
     } else {
         // invalid base error out
@@ -260,7 +269,7 @@ u32 xasm_error(u32 error_id,u32 line, char* func, char* msg, ...){
     } else {
         puts("");
     }
-    exit(error_id);
+    exit((int)error_id);
 }
 
 arg* init_arg(){
@@ -274,12 +283,11 @@ arg* init_arg(){
 u32 disp_arg(arg* x_arg){
     printf("arg_type: ");
     switch(x_arg->arg_type){
-        case arg_offset: printf("arg_offset\t");printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
-        case arg_register: printf("arg_register\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
-        case arg_immediate: printf("arg_immediate\t");printf("value: 0x%.8x\n", x_arg->opt_value);break;
-        case (arg_pointer | arg_offset| arg_register): printf("arg_pointer\t");printf("regid: 0x%x\t", x_arg->opt_regid);printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
-        case (arg_pointer | arg_offset): printf("arg_pointer\t");printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
-        case (arg_pointer | arg_register): printf("arg_pointer\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
+        case ARG_REGD: printf("arg_register\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
+        case ARG_IMMD: printf("arg_immediate\t");printf("value: 0x%.8x\n", x_arg->opt_value);break;
+        case (ARG_PTRD | ARG_IMMD | ARG_REGD): printf("arg_pointer\t");printf("regid: 0x%x\t", x_arg->opt_regid);printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
+        case (ARG_PTRD | ARG_IMMD): printf("arg_pointer\t");printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
+        case (ARG_PTRD | ARG_REGD): printf("arg_pointer\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
         default: printf("arg_noarg\n");break;
     }
     return E_OK;

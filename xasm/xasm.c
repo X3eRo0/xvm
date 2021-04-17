@@ -17,8 +17,8 @@ int main(int argc, char* argv[]){
 
     // add default .text and .data sections
     xasm->sections = init_section();
-    section_entry* text = add_section(xasm->sections, ".text", 0x1000, PERM_READ | PERM_EXEC);
-    section_entry* data = add_section(xasm->sections, ".data", 0x1000, PERM_READ | PERM_WRITE);
+    section_entry* text = add_section(xasm->sections, ".text", 0x1000, 0x41414000, PERM_READ | PERM_EXEC);
+    section_entry* data = add_section(xasm->sections, ".data", 0x1000, 0xf00db000, PERM_READ | PERM_WRITE);
 
     // open the input and output files
     // for assembling
@@ -33,6 +33,7 @@ int main(int argc, char* argv[]){
     xasm->header->x_szfile = get_total_size(xasm);
     xasm->header->x_dbgsym = xasm->symtab->n_symbols;
     xasm->header->x_sections = xasm->sections->n_sections;
+    xasm->header->x_entry = resolve_symbol_addr(xasm->symtab, "_start");
 
     // write headers
     write_exe_header(xasm->header, xasm->ofile);

@@ -12,6 +12,8 @@
 
 #define XVM_MAGIC       0x036d7678 // "xvm\x03"
 #define XVM_DFLT_EP     0x90000000
+#define XVM_DFLT_SP     0x41414141
+#define XVM_STACK_SIZE  0x4000
 #define XVM_HDR_SIZE    0x14
 
 #define E_OK		 0
