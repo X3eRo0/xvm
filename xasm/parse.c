@@ -5,12 +5,32 @@
 #include "xasm.h"
 
 const char* mnemonics[XVM_NINSTR] = {
-        [opc_mov] = "mov",
-        [opc_add] = "add",
-        [opc_hlt] = "hlt",
-        [opc_ret] = "ret",
-        [opc_call] = "call",
-        [opc_syscall] = "syscall",
+        [XVM_OP_MOV]  = "mov",
+        [XVM_OP_MOVB] = "movb",
+        [XVM_OP_NOP]  = "nop",
+        [XVM_OP_HLT]  = "hlt",
+        [XVM_OP_RET]  = "ret",
+        [XVM_OP_CALL] = "call",
+        [XVM_OP_SYSC] = "syscall",
+        [XVM_OP_ADD]  = "add",
+        [XVM_OP_SUB]  = "sub",
+        [XVM_OP_MUL]  = "mul",
+        [XVM_OP_DIV]  = "div",
+        [XVM_OP_XOR]  = "xor",
+        [XVM_OP_AND]  = "and",
+        [XVM_OP_OR]   = "or",
+        [XVM_OP_NOT]  = "not",
+        [XVM_OP_PUSH] = "push",
+        [XVM_OP_POP]  = "pop",
+        [XVM_OP_XCHG] = "xchg",
+        [XVM_OP_INC]  = "inc",
+        [XVM_OP_DEC]  = "dec",
+        [XVM_OP_CMP]  = "cmp",
+        [XVM_OP_JMP]  = "jmp",
+        [XVM_OP_JZ]   = "jz",
+        [XVM_OP_JNZ]  = "jnz",
+        [XVM_OP_JA]   = "ja",
+        [XVM_OP_JB]   = "jb",
 };
 
 const char* registers[XVM_NREGS] = {
@@ -116,7 +136,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
             else if (base[0] == '#') { // offset
                 if (!calc_size) {
                     arg->arg_type |= ARG_IMMD;
-                    arg->opt_offset = sign * xasm_resolve_number(base);
+                    arg->opt_value = sign * xasm_resolve_number(base);
                 }
                 size += sizeof(u32);
             }
@@ -136,7 +156,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
             if (index[0] != '\x00' && index[0] == '#'){
                 if (!calc_size) {
                     arg->arg_type |= ARG_IMMD;
-                    arg->opt_offset = sign * xasm_resolve_number(index);
+                    arg->opt_value = sign * xasm_resolve_number(index);
                 }
                 size += sizeof(u32);
             }
@@ -161,7 +181,7 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
     for (sym_entry * i = symtab->symbols; i != NULL; i = i->next){
         if (!strncmp(i->name, args, strlen(args))){
             arg->arg_type |= ARG_IMMD;
-            arg->opt_offset = i->addr;
+            arg->opt_value = i->addr;
             return E_OK;
         }
     }
@@ -335,20 +355,14 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
         clear_whitespaces(line);
 
-        char* rest  = line;
-        char* token = NULL;
-        while ((token = strtok_r(rest, ",", &rest))){
-            clear_whitespaces(token);
-
-            // if token is a string
-            if (token[0] == '"'){
-                size = xasm_escape_string(token);
-                if (!calc_size){
-                    memcpy_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, token, size + 1); // +1 for null byte
-                }
-            } else {
-                xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", token);
+        // if token is a string
+        if (line[0] == '"'){
+            size = xasm_escape_string(line);
+            if (!calc_size){
+                memcpy_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, line, size + 1); // +1 for null byte
             }
+        } else {
+            xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", line);
         }
 
         fini_arg(arg1); arg1 = NULL;
@@ -363,7 +377,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         // correct for pass 1
 
         opcd = xasm_resolve_opcode(opcds);
-        size += 1; // size of opcode in bytes
+        size += 2; // size of opcode and mode byte in bytes
 
         size += xasm_resolve_argument(arg1, xasm->symtab, arg1s, calc_size); // get size of arguments
         size += xasm_resolve_argument(arg2, xasm->symtab, arg2s, calc_size); // get size of arguments
@@ -389,9 +403,8 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
                             if (arg1->arg_type & ARG_REGD){
                                 write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_regid, WRITE_AS_BYTE);
                             }
-                            // if pointer the value is in offset.
                             if (arg1->arg_type & ARG_IMMD){
-                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_offset, WRITE_AS_DWORD);
+                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg1->opt_value, WRITE_AS_DWORD);
                             }
                         }
                     }
@@ -411,9 +424,8 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
                             if (arg2->arg_type & ARG_REGD){
                                 write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_regid, WRITE_AS_BYTE);
                             }
-                            // if pointer the value is in offset.
                             if (arg2->arg_type & ARG_IMMD){
-                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_offset, WRITE_AS_DWORD);
+                                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, arg2->opt_value, WRITE_AS_DWORD);
                             }
                         }
                     }

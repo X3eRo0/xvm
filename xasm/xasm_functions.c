@@ -227,7 +227,7 @@ u32 xasm_resolve_number(char* num_s){
 
 
     // decimal numbers
-    if (!z_ptr && !x_ptr && !b_ptr && !o_ptr) {
+    if (!x_ptr && !b_ptr && !o_ptr) {
         for (temp = num_s + 1; *temp != '\x00'; temp++){
             if (!is_digit(*temp)){
                 xasm_error(E_INVALID_IMMEDIATE, (u32) __LINE__ - 1, (char*) __PRETTY_FUNCTION__, "\"%c\" is not a valid digit", *temp);
@@ -285,8 +285,8 @@ u32 disp_arg(arg* x_arg){
     switch(x_arg->arg_type){
         case ARG_REGD: printf("arg_register\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
         case ARG_IMMD: printf("arg_immediate\t");printf("value: 0x%.8x\n", x_arg->opt_value);break;
-        case (ARG_PTRD | ARG_IMMD | ARG_REGD): printf("arg_pointer\t");printf("regid: 0x%x\t", x_arg->opt_regid);printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
-        case (ARG_PTRD | ARG_IMMD): printf("arg_pointer\t");printf("offset: 0x%.8x\n", x_arg->opt_offset);break;
+        case (ARG_PTRD | ARG_IMMD | ARG_REGD): printf("arg_pointer\t");printf("regid: 0x%x\t", x_arg->opt_regid);printf("offset: 0x%.8x\n", x_arg->opt_value);break;
+        case (ARG_PTRD | ARG_IMMD): printf("arg_pointer\t");printf("offset: 0x%.8x\n", x_arg->opt_value);break;
         case (ARG_PTRD | ARG_REGD): printf("arg_pointer\t");printf("regid: 0x%x\n", x_arg->opt_regid);break;
         default: printf("arg_noarg\n");break;
     }

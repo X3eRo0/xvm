@@ -106,7 +106,7 @@ u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2,
     return (u8) size;
 }
 
-u32 execute(xvm_cpu* cpu, xvm_bin* bin){
+u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
     u32 * arg1 = NULL; // arguments will be returned here
     u32 * arg2 = NULL; // arguments will be returned here
     u32 size = 0;
@@ -122,15 +122,238 @@ u32 execute(xvm_cpu* cpu, xvm_bin* bin){
         narg += 1;
     }
 
+    // resolve arguments
+    size = get_argument(cpu, bin, mode, &arg1, &arg2, narg);
+
     switch(opcd){
+
+        // hlt
         case XVM_OP_HLT: set_RF(cpu, 0); size = 2; break;
+
+        // nop
         case XVM_OP_NOP: size = 2; break;
+
+        // syscall
+        case XVM_OP_SYSC: {
+            do_syscall(cpu, bin);
+            break;
+        }
+
+        // mov
+        case XVM_OP_MOV: {
+            *arg1 = *arg2;
+            break;
+        }
+
+        case XVM_OP_MOVB: {
+            *(u8 *)arg1 = *(u8 *)arg2;
+            break;
+        }
+
+        // call
+        case XVM_OP_CALL: {
+            // push eip
+            write_dword(bin->x_section, cpu->regs.sp, cpu->regs.pc);
+            cpu->regs.sp += sizeof(u32);
+            // eip = imm
+            cpu->regs.pc = *arg1;
+            break;
+        }
+
+        // ret
+        case XVM_OP_RET: {
+            // pop eip
+            cpu->regs.sp -= sizeof(u32);
+            cpu->regs.pc = read_dword(bin->x_section, cpu->regs.sp, PERM_WRITE);
+            break;
+        }
+
+        // xor
+        case XVM_OP_XOR: {
+            *arg1 ^= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // and
+        case XVM_OP_AND: {
+            *arg1 &= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // or
+        case XVM_OP_OR: {
+            *arg1 |= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // not
+        case XVM_OP_NOT: {
+            *arg1 = ~*arg1;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // add
         case XVM_OP_ADD: {
-            size = get_argument(cpu, bin, mode, &arg1, &arg2, narg);
             *arg1 += *arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // sub
+        case XVM_OP_SUB: {
+            *arg1 -= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // mul
+        case XVM_OP_MUL: {
+            *arg1 *= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // div
+        case XVM_OP_DIV: {
+
+            if (arg2 == 0){
+                // FIXME: Give divide by zero error
+                break;
+            }
+
+            *arg1 /= *arg2;
+            cpu->regs.r1 = *arg1 % *arg2;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // push
+        case XVM_OP_PUSH: {
+            write_dword(bin->x_section, cpu->regs.sp, *arg1);
+            cpu->regs.sp += sizeof(u32);
+            break;
+        }
+
+        // pop
+        case XVM_OP_POP: {
+            cpu->regs.sp -= sizeof(u32);
+            *arg1 = read_dword(bin->x_section, cpu->regs.sp, PERM_WRITE);
+            break;
+        }
+
+        // xchg
+        case XVM_OP_XCHG: {
+            u32 temp = *arg1;
+            *arg1 = *arg2;
+            *arg2 = temp;
+            break;
+        }
+
+        // inc
+        case XVM_OP_INC: {
+            *arg1++;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+
+            break;
+        }
+
+        // dec
+        case XVM_OP_DEC: {
+            *arg1--;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            }
+
+            break;
+        }
+
+        // cmp
+        case XVM_OP_CMP: {
+            if (*arg1 == *arg2){
+                set_ZF(cpu, 1);
+            }
+
+            if (*arg1 < *arg1){
+                set_ZF(cpu, 0);
+                set_CF(cpu, 1);
+            }
+
+            if (*arg1 > *arg2){
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // jmp
+        case XVM_OP_JMP: {
+            cpu->regs.pc = *arg1;
+            break;
+        }
+
+        // jz
+        case XVM_OP_JZ: {
+            if (get_ZF(cpu)){
+                cpu->regs.pc = *arg1;
+            }
+            break;
+        }
+
+        // jnz
+        case XVM_OP_JNZ: {
+            if (!get_ZF(cpu)){
+                cpu->regs.pc = *arg1;
+            }
+            break;
+        }
+
+        // ja
+        case XVM_OP_JA: {
+            if (!get_ZF(cpu) && !get_CF(cpu)){
+                cpu->regs.pc = *arg1;
+            }
+            break;
+        }
+
+        // jb
+        case XVM_OP_JB: {
+            if (!get_ZF(cpu) && get_CF(cpu)){
+                cpu->regs.pc = *arg1;
             }
             break;
         }

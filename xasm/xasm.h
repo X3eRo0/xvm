@@ -14,22 +14,39 @@
 #include "../common/loader.h"
 
 
-#define XVM_NINSTR  6
+#define XVM_NINSTR  26
 #define XVM_NREGS   7
 
 
 // enum for opcodes
 
 typedef enum {
-
-    opc_mov,
-    opc_add,
-    opc_nop,
-    opc_hlt,
-    opc_ret,
-    opc_call,
-    opc_syscall,
-
+    XVM_OP_MOV,
+    XVM_OP_MOVB,
+    XVM_OP_NOP,
+    XVM_OP_HLT,
+    XVM_OP_RET,
+    XVM_OP_CALL,
+    XVM_OP_SYSC,
+    XVM_OP_ADD,
+    XVM_OP_SUB,
+    XVM_OP_MUL,
+    XVM_OP_DIV,
+    XVM_OP_XOR,
+    XVM_OP_AND,
+    XVM_OP_OR,
+    XVM_OP_NOT,
+    XVM_OP_PUSH,
+    XVM_OP_POP,
+    XVM_OP_XCHG,
+    XVM_OP_INC,
+    XVM_OP_DEC,
+    XVM_OP_CMP,
+    XVM_OP_JMP,
+    XVM_OP_JZ,
+    XVM_OP_JNZ,
+    XVM_OP_JA,
+    XVM_OP_JB,
 } xvm_opcodes;
 
 
@@ -116,11 +133,8 @@ typedef struct xasm_t {
 typedef struct arg_t {
 
     u32 arg_type;   // register, immediate, pointer
-    u32 opt_value;  // if immediate
+    u32 opt_value;  // if immediate or pointer
     u32 opt_regid;  // if register
-    u32 opt_offset; // if pointer
-
-
 } arg;
 
 

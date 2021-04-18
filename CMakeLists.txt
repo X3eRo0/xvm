@@ -15,7 +15,7 @@ add_executable(xvm
     common/loader.h
     common/sections.c
     common/sections.h
-)
+        xvm/syscall.c)
 
 add_executable(xasm
     xasm/xasm.c

@@ -24,7 +24,7 @@ u32* get_reference(section *sec, u32 addr, u8 opt_perm) {
     // read byte
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_READ | opt_perm)){
+        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return ((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -38,7 +38,7 @@ u8 read_byte(section *sec, u32 addr, u8 opt_perm) {
     // read byte
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_READ | opt_perm)){
+        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return (u8)*((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -52,7 +52,7 @@ u16 read_word(section *sec, u32 addr, u8 opt_perm) {
     // read word
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_READ | opt_perm)){
+        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return (u16)*((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -66,7 +66,7 @@ u32 read_dword(section* sec, u32 addr, u8 opt_perm){
     // read dword
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_READ | opt_perm)){
+        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return (u32)*((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -123,7 +123,7 @@ u32 write_byte(section *sec, u32 addr, u8 byte) {
     // write byte
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_WRITE)){
+        if (!(sec_entry->m_flag & (PERM_WRITE))){
             segfault(XVM_INVALID_WRITE, sec_entry, addr);
         }
         *((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = byte;
@@ -138,7 +138,7 @@ u32 write_word(section *sec, u32 addr, u16 word){
     // write word
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_WRITE)){
+        if (!(sec_entry->m_flag & (PERM_WRITE))){
             segfault(XVM_INVALID_WRITE, sec_entry, addr);
         }
         *((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = word;
@@ -153,7 +153,7 @@ u32 write_dword(section *sec, u32 addr, u32 dword){
     // write dword
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (sec_entry->m_flag & ~(PERM_WRITE)){
+        if (!(sec_entry->m_flag & PERM_WRITE)){
             segfault(XVM_INVALID_WRITE, sec_entry, addr);
         }
         *((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = dword;
