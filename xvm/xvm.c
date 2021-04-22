@@ -2,13 +2,13 @@
 
 int main(int argc, char* argv[]) {
 
-    // FIXME: Bug still remains. adding a check to prevent unmapping of head section also prevents
-    // it from unmapping in the destruction function.
-
 	if (argc != 2){
         fprintf(stderr, "Usage: xvm <bytecode>\n");
         exit(-1);
 	}
+
+	setbuf(stdin, 0);
+	setbuf(stdout, 0);
 
 	xvm_cpu * cpu = init_xvm_cpu();
 	xvm_bin * bin = init_xvm_bin();

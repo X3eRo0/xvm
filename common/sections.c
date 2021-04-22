@@ -163,11 +163,11 @@ u32 write_dword(section *sec, u32 addr, u32 dword){
     return E_ERR;
 }
 
-u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag){
+u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag) {
     // set section entry members
 
-    if ((size % 0x1000) != 0){
-        size = ((size/0x1000) + 1) * 0x1000;
+    if ((size % 0x1000) != 0) {
+        size = ((size / 0x1000) + 1) * 0x1000;
     }
 
     // FIXME: check if any other section entry already has the same values
@@ -175,11 +175,13 @@ u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, 
     // if size is greater than the limit, adjust the size
     size = size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : size;
 
-    if (sec_entry->m_name == NULL){
-        sec_entry->m_name = strdup(name);
-    } else {
-        sec_entry->m_name = realloc(sec_entry->m_name, strlen(name) + 1);
-        strncpy(sec_entry->m_name, name, strlen(name));
+    if (name != NULL) {
+        if (sec_entry->m_name == NULL) {
+            sec_entry->m_name = strdup(name);
+        } else {
+            sec_entry->m_name = realloc(sec_entry->m_name, MAX_NAME_SIZE);
+            strncpy(sec_entry->m_name, name, MAX_NAME_SIZE);
+        }
     }
 
     sec_entry->v_size = size;
@@ -232,16 +234,6 @@ u32 show_section_entry_info(section_entry* sec_entry){
 u32 fini_section_entry(section_entry* sec_entry){
     // destroy section structure
 
-    // BUG: if we delete the 1st section
-    // when it is not the last section in
-    // the list, then we basically loose
-    // all the sections which were after
-    // the 1st section.
-
-    if (sec_entry->next != NULL && !strncmp(sec_entry->m_name, ".text", 5)){
-        return E_ERR;
-    }
-
     if (sec_entry->m_buff){
         free(sec_entry->m_buff); sec_entry->m_buff = NULL;
     }
@@ -277,6 +269,10 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
     size = (size % 0x1000) == 0 ? size : (size/0x1000 + 1) * 0x1000;
     size = size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : size;
 
+    if ((u64) addr + (u64) size > 0x100000000){
+        return NULL;
+    }
+
     if (sec == NULL) {
         return NULL;
     }
@@ -291,22 +287,43 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
     section_entry* temp = sec->sections;
     section_entry* prev = NULL;
 
+    // if new section's v_addr is smaller than the head of the list then change
+    // the head of the list
+
+    if (addr + size < temp->v_addr){
+
+        // this check ensures that the first section in the list is always
+        // at the lowest address possible
+
+        section_entry* new = init_section_entry();
+        set_section_entry(new, name, size, addr, flag);
+        new->next = sec->sections;
+        sec->sections = new;
+        return new;
+    }
+
+
     while (temp != NULL){
 
-        if (!strncmp(temp->m_name, name, strlen(name))){
-            if (temp->v_size != size){
+        if (addr >= temp->v_addr && addr < section_end(temp)){
+            if (temp->v_size != size && temp->next != NULL && temp->v_addr + size < temp->next->v_addr){
                 temp->v_size = size;
                 temp->m_buff = realloc(temp->m_buff, size);
             }
             if (temp->m_flag != flag){
                 temp->m_flag = flag;
             }
-            if (temp->v_addr != addr){
-                temp->v_addr = addr;
-            }
 
             return temp;
         }
+
+        if (prev != NULL){
+            if ((section_end(prev) < addr) && (addr + size < temp->v_addr)){
+                // insert the new section here
+                break;
+            }
+        }
+
         prev = temp;
         temp = temp->next;
     }
@@ -314,15 +331,18 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
     prev->next = init_section_entry();
     sec->n_sections++;
     set_section_entry(prev->next, name, size, addr, flag);
+    prev->next->next = temp;
 
     return prev->next;
 }
+
+
 
 section_entry* find_section_entry_by_name(section* sec, char* name){
 
     section_entry* temp = sec->sections;
     while (temp != NULL){
-        if (!strncmp(temp->m_name, name, strlen(name))){
+        if (temp->m_name != NULL && !strncmp(temp->m_name, name, strlen(name))){
             return temp;
         }
         temp = temp->next;

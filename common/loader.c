@@ -148,10 +148,7 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
         section_size = section_size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : section_size;
         section_indx = section_indx > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : section_indx;
 
-        add_section(bin->x_section, section_name, section_size, section_addr, section_flag);
-
-        section = find_section_entry_by_addr(bin->x_section, section_addr);
-
+        section = add_section(bin->x_section, section_name, section_size, section_addr, section_flag);
 
         // after allocating the section read and fill the bytes
         for (u32 j = 0; j < section_indx; j++){

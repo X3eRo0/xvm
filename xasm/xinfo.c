@@ -12,6 +12,7 @@ int main(int argc, char* argv[]){
     // argument checking
     if (argc != 2) {
         printf("Usage %s <xvm.bin>\n", argv[0]);
+        fini_xvm_bin(bin); bin = NULL;
         return E_ERR;
     }
 

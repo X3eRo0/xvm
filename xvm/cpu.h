@@ -45,6 +45,9 @@ typedef enum xvm_opcd_t {
 typedef enum xvm_sysc_t {
     XVM_SYSC_READ,
     XVM_SYSC_WRITE,
+    XVM_SYSC_MAP,
+    XVM_SYSC_UNMAP,
+    XVM_SYSC_EXEC,
 } xvm_syscalls;
 
 typedef struct xvm_reg_t {

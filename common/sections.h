@@ -12,6 +12,8 @@
 #define WRITE_AS_DWORD 2
 
 #define MAX_ALLOC_SIZE 0x4000
+#define MAX_NAME_SIZE  0x20
+#define section_end(sec) (((sec)->v_addr) + ((sec)->v_size))
 
 typedef struct section_entry_t {
     char*   m_name;                   // name of section

@@ -258,10 +258,14 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         // printf("section addr: 0x%x\n", section_addr);
 
         if (*current_section_entry != NULL) {
-            add_section(xasm->sections, (*current_section_entry)->m_name, section_size, section_addr, section_flag);
+            (*current_section_entry)->v_addr = section_addr;
+            (*current_section_entry)->v_size = section_size;
+            (*current_section_entry)->m_flag = section_flag;
+            (*current_section_entry)->m_buff = (char*)realloc((*current_section_entry)->m_buff, section_size);
         } else {
             *current_section_entry = add_section(xasm->sections, temp, section_size, section_addr, section_flag);
         }
+
         fini_arg(arg1); arg1 = NULL;
         fini_arg(arg2); arg2 = NULL;
         return 0;
@@ -285,7 +289,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, (u8)imm, WRITE_AS_BYTE);
+                    write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u8)imm, WRITE_AS_BYTE);
                 }
             }
         }
@@ -339,7 +343,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, (u32)imm, WRITE_AS_DWORD);
+                    write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_DWORD);
                 }
             }
         }
@@ -475,9 +479,7 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
     while (getline(&line, &size, xasm->ifile) > 0){
         temp = line;
 
-        while (is_white_space(temp)){
-            temp++;
-        }
+        clear_whitespaces(temp);
 
         comment = strchrnul(temp, ';');     // find comment
         label   = strchrnul(temp, ':');     // find label
@@ -491,6 +493,7 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
         if (is_line_empty(temp)){
             continue;
         }
+
 
         if (label < comment) {
             add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
@@ -507,6 +510,7 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
 
     rewind(xasm->ifile);    // rewind the file
     reset_address_of_sections(xasm->sections);
+    current_section = default_section_entry;
 
     // second pass
     while(getline(&line, &size, xasm->ifile) > 0){
