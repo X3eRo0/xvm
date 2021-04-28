@@ -216,6 +216,12 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         *current_section_entry = find_section_entry_by_name(xasm->sections, temp);
         clear_whitespaces(line);
 
+        if (*line == '\x00'){
+            fini_arg(arg1); arg1 = NULL;
+            fini_arg(arg2); arg2 = NULL;
+            return 0;
+        }
+
         char* flag_s = line;        // string for section flags
         skip_to_whitespace(flag_s)  // NULL terminate at first whitespace
         *flag_s++ = '\x00';         // after the immediate
@@ -450,7 +456,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 }
 
 
-u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
+u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **inputf, u32 ifiles) {
     // assemble the xvm source
 
     char* line      = NULL; // this buffer will be allocated by getline
@@ -466,85 +472,93 @@ u32 xasm_assemble(xasm* xasm, section_entry* default_section_entry){
         return E_ERR;
     }
 
-    if (xasm->ifile == NULL) {
-        return E_ERR;
-    }
-
     if (xasm->ofile == NULL) {
         return E_ERR;
     }
 
-    // first pass
+    // first pass for all input files
 
-    while (getline(&line, &size, xasm->ifile) > 0){
-        temp = line;
+    for (u32 i = 0; i < ifiles; i++) {
 
-        clear_whitespaces(temp);
+        xasm->ifile = inputf[i];
 
-        comment = strchrnul(temp, ';');     // find comment
-        label   = strchrnul(temp, ':');     // find label
-        newline = strchrnul(temp, '\n');    // find line end
+        while (getline(&line, &size, xasm->ifile) > 0) {
+            temp = line;
 
-        // remove any comment or label symbol
-        comment[0]  = '\x00';
-        label[0]    = '\x00';
-        newline[0]  = '\x00';
+            clear_whitespaces(temp);
 
-        if (is_line_empty(temp)){
-            continue;
-        }
+            comment = strchrnul(temp, ';');     // find comment
+            label = strchrnul(temp, ':');     // find label
+            newline = strchrnul(temp, '\n');    // find line end
 
+            // remove any comment or label symbol
+            comment[0] = '\x00';
+            label[0] = '\x00';
+            newline[0] = '\x00';
 
-        if (label < comment) {
-            add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
-            temp = ++label;         // process the rest of the string
-            if (*temp == '\x00') {  // if the string ends here continue
+            if (is_line_empty(temp)) {
                 continue;
             }
+
+
+            if (label < comment) {
+                add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
+                temp = ++label;         // process the rest of the string
+                if (*temp == '\x00') {  // if the string ends here continue
+                    continue;
+                }
+            }
+
+            // instruction is valid
+            // increment address
+            current_section->a_size += xasm_assemble_line(xasm, temp, &current_section, true); // get size
         }
 
-        // instruction is valid
-        // increment address
-        current_section->a_size += xasm_assemble_line(xasm, temp, &current_section, true); // get size
+        rewind(xasm->ifile);    // rewind the file
+        current_section = default_section_entry;
+
     }
 
-    rewind(xasm->ifile);    // rewind the file
     reset_address_of_sections(xasm->sections);
-    current_section = default_section_entry;
 
-    // second pass
-    while(getline(&line, &size, xasm->ifile) > 0){
-        temp = line;
+    // second pass for all the input files
 
-        while (is_white_space(temp)){
-            temp++;
+    for (u32 i = 0; i < ifiles; i++) {
+
+        xasm->ifile = inputf[i];
+        while (getline(&line, &size, xasm->ifile) > 0) {
+            temp = line;
+
+            while (is_white_space(temp)) {
+                temp++;
+            }
+
+            comment = strchrnul(temp, ';');     // find comment
+            label = strchrnul(temp, ':');     // find label
+            newline = strchrnul(temp, '\n');    // find line end
+
+            // remove any comment or label symbol
+            comment[0] = '\x00';
+            label[0] = '\x00';
+            newline[0] = '\x00';
+
+            if (is_line_empty(temp)) {
+                continue;
+            }
+
+            if (label < comment) {
+                continue;
+            }
+
+            // instruction is valid
+            // increment address
+            xasm_assemble_line(xasm, temp, &current_section, false); // assemble
         }
 
-        comment = strchrnul(temp, ';');     // find comment
-        label   = strchrnul(temp, ':');     // find label
-        newline = strchrnul(temp, '\n');    // find line end
-
-        // remove any comment or label symbol
-        comment[0]  = '\x00';
-        label[0]    = '\x00';
-        newline[0]  = '\x00';
-
-        if (is_line_empty(temp)){
-            continue;
-        }
-
-        if (label < comment) {
-            continue;
-        }
-
-        // instruction is valid
-        // increment address
-        xasm_assemble_line(xasm, temp, &current_section, false); // assemble
+        free(line);
+        line = NULL; temp = NULL; size = 0;
     }
 
-
-    free(line);
-    line = NULL; temp = NULL; size = 0;
 
     return E_OK;
 }

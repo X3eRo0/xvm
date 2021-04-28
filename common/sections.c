@@ -489,7 +489,7 @@ u32 memcpy_buffer_to_section_by_addr(section* sec, u32 addr, char* buffer, u32 s
 
     section_entry* temp = sec->sections;
     while (temp != NULL){
-        if (addr >= temp->v_addr && addr <= temp->v_addr + temp->v_size){
+        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size){
             break;
         }
         temp = temp->next;

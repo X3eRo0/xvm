@@ -35,7 +35,7 @@ u32 xasm_open_ofile(xasm* xasm, char * file){
     // open output file
 
     xasm->ofile = fopen(file, "wb");
-    if (!xasm->ifile){
+    if (!xasm->ofile){
         xasm_error(E_NOFILE, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "Cannot create \"%s\"", file);
     }
     return E_OK;
@@ -90,7 +90,6 @@ u32 fini_xasm(xasm* xasm){
 
     // finish xvm assembler
 
-    xasm_close_ifile(xasm); xasm->ifile = NULL;
     xasm_close_ofile(xasm); xasm->ofile = NULL;
     fini_symtab(xasm->symtab); xasm->symtab = NULL;
     fini_section(xasm->sections); xasm->sections = NULL;
@@ -254,7 +253,7 @@ u32 xasm_error(u32 error_id,u32 line, char* func, char* msg, ...){
     switch (error_id) {
         case E_INVALID_IMMEDIATE: error_msg = "Invalid Immediate value"; break;
         case E_INVALID_SYNTAX: error_msg = "Invalid Syntax"; break;
-        case E_INVALID_OPCODE: error_msg = "Uknown Opcode"; break;
+        case E_INVALID_OPCODE: error_msg = "Unknown Opcode"; break;
         default: error_msg = "UNKNOWN ERROR"; break;
     }
 

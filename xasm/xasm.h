@@ -150,7 +150,7 @@ u32     xasm_resolve_register_id(char* reg_s);
 u32     xasm_resolve_opcode(char* mnemonic);
 u32     xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size);
 char*   xasm_resolve_mnemonic(u32 opcode);
-u32     xasm_assemble(xasm* xasm, section_entry* current_section_entry);
+u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **inputf, u32 ifiles);
 u32     xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_entry, bool calc_size);
 u32     xasm_open_ifile(xasm* xasm, char* file);
 u32     xasm_open_ofile(xasm* xasm, char* file);
