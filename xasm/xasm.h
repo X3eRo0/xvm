@@ -14,7 +14,7 @@
 #include "../common/loader.h"
 
 
-#define XVM_NINSTR  27
+#define XVM_NINSTR  28
 #define XVM_NREGS   16
 
 
@@ -43,6 +43,7 @@ typedef enum {
     XVM_OP_INC,
     XVM_OP_DEC,
     XVM_OP_CMP,
+    XVM_OP_TEST,
     XVM_OP_JMP,
     XVM_OP_JZ,
     XVM_OP_JNZ,

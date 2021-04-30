@@ -190,6 +190,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
             }
             break;
         }
@@ -199,6 +202,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             *arg1 &= *arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
             break;
@@ -210,6 +216,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
             }
             break;
         }
@@ -219,6 +228,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             *arg1 = ~*arg1;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
             break;
@@ -230,6 +242,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
             }
             break;
         }
@@ -240,6 +255,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
             }
             break;
         }
@@ -249,6 +267,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             *arg1 *= *arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
             break;
@@ -267,6 +288,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
             break;
@@ -296,10 +320,13 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // inc
         case XVM_OP_INC: {
-            *arg1++;
+            (*arg1)++;
 
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
 
@@ -308,10 +335,13 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // dec
         case XVM_OP_DEC: {
-            *arg1--;
+            (*arg1)--;
 
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
 
@@ -330,6 +360,18 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             if (*arg1 > *arg2){
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // test
+        case XVM_OP_TEST:{
+            if ((*arg1 & *arg2) == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
                 set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }

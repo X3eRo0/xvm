@@ -36,6 +36,7 @@ typedef enum xvm_opcd_t {
     XVM_OP_INC,
     XVM_OP_DEC,
     XVM_OP_CMP,
+    XVM_OP_TEST,
     XVM_OP_JMP,
     XVM_OP_JZ,
     XVM_OP_JNZ,
@@ -131,10 +132,8 @@ u32 *get_register(xvm_cpu* cpu, u8 reg_id);
 u32  do_execute(xvm_cpu* cpu, xvm_bin* bin);
 u32  do_syscall(xvm_cpu* cpu, xvm_bin* bin);
 void fde_cpu(xvm_cpu* cpu, xvm_bin* bin);
+// void show_registers(xvm_cpu* cpu);
 void update_flags(xvm_cpu * cpu, u32 res);
 void fini_xvm_cpu(xvm_cpu * cpu);
 
-/* xvm instructions
-u32 xvm_op_hlt(u8 mode, u8 arg1, u8 arg2, u32 imm1, u32 imm2);
----------------- */
 #endif //XVM_CPU_H

@@ -27,6 +27,7 @@ const char* mnemonics[XVM_NINSTR] = {
         [XVM_OP_INC]  = "inc",
         [XVM_OP_DEC]  = "dec",
         [XVM_OP_CMP]  = "cmp",
+        [XVM_OP_TEST] = "test",
         [XVM_OP_JMP]  = "jmp",
         [XVM_OP_JZ]   = "jz",
         [XVM_OP_JNZ]  = "jnz",
@@ -93,6 +94,12 @@ u32 xasm_resolve_register_id(char* reg_s){
 
 u32 xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size){
     // check if argument exists
+
+    char * end = strchr(args, '\x00') - 1;
+    while (is_white_space(end)){
+        end--;
+    }
+    *++end = '\0';
 
     if (args[0] == '\x00'){
         if (!calc_size){
@@ -184,14 +191,14 @@ u32 xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size){
 
             if (modifier[0] != '\x00' && (modifier[0] == '+' || modifier[0] == '-')){
                 sign = get_sign(modifier[0]);
-            }
 
-            if (index[0] != '\x00' && index[0] == '#'){
-                if (!calc_size) {
-                    arg->arg_type |= ARG_IMMD;
-                    arg->opt_value = sign * xasm_resolve_number(index);
+                if (index[0] != '\x00' && index[0] == '#'){
+                    if (!calc_size) {
+                        arg->arg_type |= ARG_IMMD;
+                        arg->opt_value = sign * xasm_resolve_number(index);
+                    }
+                    size += sizeof(u32);
                 }
-                size += sizeof(u32);
             }
 
             arg->arg_type |= ARG_PTRD;   // this class of argument is pointer
@@ -409,9 +416,9 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
 
         // if token is a string
         if (line[0] == '"'){
-            size = xasm_escape_string(line);
+            size = xasm_escape_string(line) + 1;
             if (!calc_size){
-                memcpy_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, line, size + 1); // +1 for null byte
+                memcpy_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, line, size); // +1 for null byte
             }
         } else {
             xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", line);
@@ -563,6 +570,7 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
             if (label < comment) {
                 add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
                 temp = ++label;         // process the rest of the string
+                clear_whitespaces(temp);
                 if (*temp == '\x00') {  // if the string ends here continue
                     continue;
                 }
