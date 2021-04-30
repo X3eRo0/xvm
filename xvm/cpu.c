@@ -50,8 +50,6 @@ xvm_cpu * init_xvm_cpu(){
     return cpu;
 }
 
-
-
 void fde_cpu(xvm_cpu *cpu, xvm_bin *bin){
     u32 instr_size = 0;
     while (get_RF(cpu)){

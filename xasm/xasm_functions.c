@@ -12,6 +12,7 @@ xasm* init_xasm(){
     t_xasm->ifile = NULL;
     t_xasm->ofile = NULL;
     t_xasm->symtab = init_symtab();
+    t_xasm->define = init_symtab();
     t_xasm->header = init_exe_header();
 
     return t_xasm;
@@ -92,6 +93,7 @@ u32 fini_xasm(xasm* xasm){
 
     xasm_close_ofile(xasm); xasm->ofile = NULL;
     fini_symtab(xasm->symtab); xasm->symtab = NULL;
+    fini_symtab(xasm->define); xasm->define = NULL;
     fini_section(xasm->sections); xasm->sections = NULL;
     fini_exe_header(xasm->header); xasm->header = NULL;
 
@@ -241,7 +243,7 @@ u32 xasm_resolve_number(char* num_s){
     return E_ERR;
 }
 
-u32 xasm_error(u32 error_id,u32 line, char* func, char* msg, ...){
+u32 xasm_error(u32 error_id, u32 line, char* func, char* msg, ...){
 
     char* error_msg = NULL;
     va_list valist;
@@ -259,7 +261,7 @@ u32 xasm_error(u32 error_id,u32 line, char* func, char* msg, ...){
 
     va_end(valist);
 
-    if (!line && !func){
+    if (line && func){
         printf("(%d:%s)\t", line, func);
     }
 

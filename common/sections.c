@@ -355,7 +355,7 @@ section_entry* find_section_entry_by_addr(section* sec, u32 addr){
 
     section_entry* temp = sec->sections;
     while (temp != NULL){
-        if (addr >= temp->v_addr && addr <= temp->v_addr + temp->v_size){
+        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size){
             return temp;
         }
         temp = temp->next;

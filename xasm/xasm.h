@@ -14,8 +14,8 @@
 #include "../common/loader.h"
 
 
-#define XVM_NINSTR  26
-#define XVM_NREGS   7
+#define XVM_NINSTR  27
+#define XVM_NREGS   16
 
 
 // enum for opcodes
@@ -23,6 +23,7 @@
 typedef enum {
     XVM_OP_MOV,
     XVM_OP_MOVB,
+    XVM_OP_MOVW,
     XVM_OP_NOP,
     XVM_OP_HLT,
     XVM_OP_RET,
@@ -59,7 +60,16 @@ typedef enum {
     reg_r2,
     reg_r3,
     reg_r4,
+    reg_r5,
+    reg_r6,
+    reg_r7,
+    reg_r8,
+    reg_r9,
+    reg_ra,
+    reg_rb,
+    reg_rc,
     reg_pc,
+    reg_bp,
     reg_sp,
 
 } xvm_registers;
@@ -126,6 +136,7 @@ typedef struct xasm_t {
     FILE*       ifile;     // input file
     FILE*       ofile;     // output file
     symtab*     symtab;    // symbol table
+    symtab*     define;    // symbol table for #define directive
     section*    sections;  // sections
     exe_header* header;
 } xasm;
@@ -148,7 +159,7 @@ u32     xasm_resolve_number(char* num_s);
 char*   xasm_resolve_register(u32 reg_id);
 u32     xasm_resolve_register_id(char* reg_s);
 u32     xasm_resolve_opcode(char* mnemonic);
-u32     xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size);
+u32     xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size);
 char*   xasm_resolve_mnemonic(u32 opcode);
 u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **inputf, u32 ifiles);
 u32     xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_entry, bool calc_size);

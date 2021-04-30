@@ -15,6 +15,14 @@ u32 * get_register(xvm_cpu * cpu, u8 reg_id){
         case r2: return &cpu->regs.r2;
         case r3: return &cpu->regs.r3;
         case r4: return &cpu->regs.r4;
+        case r5: return &cpu->regs.r5;
+        case r6: return &cpu->regs.r6;
+        case r7: return &cpu->regs.r7;
+        case r8: return &cpu->regs.r8;
+        case r9: return &cpu->regs.r9;
+        case ra: return &cpu->regs.ra;
+        case rb: return &cpu->regs.rb;
+        case rc: return &cpu->regs.rc;
         case pc: return &cpu->regs.pc;
         case bp: return &cpu->regs.bp;
         case sp: return &cpu->regs.sp;
@@ -46,7 +54,9 @@ u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2,
                     u32 reg_ptr = 0;
                     u32 immd = 0;
                     if (mode1 & XVM_REGD){ // pointer has a register as base at least
-                        reg_ptr = *get_register(cpu, read_byte(bin->x_section, cpu->regs.pc++, PERM_EXEC));
+                        reg_ptr = *get_register(cpu, read_byte(bin->x_section, cpu->regs.pc, PERM_EXEC));
+                        *arg1 = get_reference(bin->x_section, reg_ptr, PERM_READ);
+                        cpu->regs.pc++;
                         size += sizeof(u8);
                     }
                     if (mode1 & XVM_IMMD){ // pointer has an immediate offset also
@@ -80,14 +90,16 @@ u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2,
                 break;
             }
             default:{ // when an argument is a pointer
-                if (mode1 & XVM_PTRD){
+                if (mode2 & XVM_PTRD){
                     u32 reg_ptr = 0;
                     u32 immd = 0;
-                    if (mode1 & XVM_REGD){ // pointer has a register as base at least
-                        reg_ptr = *get_register(cpu, read_byte(bin->x_section, cpu->regs.pc++, PERM_EXEC));
+                    if (mode2 & XVM_REGD){ // pointer has a register as base at least
+                        reg_ptr = *get_register(cpu, read_byte(bin->x_section, cpu->regs.pc, PERM_EXEC));
+                        *arg2 = get_reference(bin->x_section, reg_ptr, PERM_READ);
+                        cpu->regs.pc++;
                         size += sizeof(u8);
                     }
-                    if (mode1 & XVM_IMMD){ // pointer has an immediate offset also
+                    if (mode2 & XVM_IMMD){ // pointer has an immediate offset also
                         immd = *get_reference(bin->x_section, cpu->regs.pc, PERM_EXEC);
                         cpu->regs.pc += sizeof(u32);
                         *arg2 = get_reference(bin->x_section, reg_ptr + immd, PERM_EXEC);
@@ -148,6 +160,10 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
         case XVM_OP_MOVB: {
             *(u8 *)arg1 = *(u8 *)arg2;
             break;
+        }
+
+        case XVM_OP_MOVW: {
+            *(u16 *)arg1 = *(u16 *)arg2;
         }
 
         // call

@@ -16,6 +16,7 @@
 typedef enum xvm_opcd_t {
     XVM_OP_MOV,
     XVM_OP_MOVB,
+    XVM_OP_MOVW,
     XVM_OP_NOP,
     XVM_OP_HLT,
     XVM_OP_RET,
@@ -56,6 +57,14 @@ typedef struct xvm_reg_t {
     u32 r2;
     u32 r3;
     u32 r4;
+    u32 r5;
+    u32 r6;
+    u32 r7;
+    u32 r8;
+    u32 r9;
+    u32 ra;
+    u32 rb;
+    u32 rc;
     u32 pc;
     u32 bp;
     u32 sp;
@@ -67,6 +76,14 @@ typedef enum {
     r2,
     r3,
     r4,
+    r5,
+    r6,
+    r7,
+    r8,
+    r9,
+    ra,
+    rb,
+    rc,
     pc,
     bp,
     sp,

@@ -6,37 +6,47 @@
 
 static u32 ifiles = 0;
 static FILE** inputf = NULL;
-static char*  output = NULL;
+static char*  output = "./a.xvm";
 static u32 dbgsyms = 0;
+
+#define USAGE()             puts("Usage: ./xasm -i <input files> -o <output file>");\
+                            puts("Author: X3eRo0");\
+                            puts("\t-i -- \tInput Files");\
+                            puts("\t-o -- \tOutput File");\
+                            puts("\t-h -- \tHelp");\
+                            exit(-1);
 
 int main(int argc, char* argv[]){
 
     // initialize assembler structure
     xasm*   xasm = init_xasm();
 
+    if (argc < 2){
+        USAGE();
+    }
+
     for (u32 i = 0; i < argc; i++){
         // if -i count until we reach other flags
-        if (argv[i][0] == '-' && argv[i][1] == 'i'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'i'){
             u32 j = ++i;
             while (argv[j] != NULL && argv[j++][0] != '-') {
                 ifiles++;
                 inputf = realloc(inputf, sizeof(char *) * ifiles);
                 inputf[ifiles - 1] = fopen(argv[i++], "r");
             }
+
+            if (ifiles == 0){
+                USAGE();
+            }
         }
-        if (argv[i][0] == '-' && argv[i][1] == 'o'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'o'){
             output = argv[++i];
         }
-        if (argv[i][0] == '-' && argv[i][1] == 'd'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'd'){
             dbgsyms = 1;
         }
-        if (!strncmp(argv[i], "--help", 6)){
-            puts("Usage: ./xasm -i <input files> -o <output file>");
-            puts("Author: X3eRo0");
-            puts("\t-i -- \tInput Files");
-            puts("\t-o -- \tOutput File");
-            puts("\t-h -- \tHelp");
-            exit(-1);
+        if ((argv[i] != NULL) && ((argv[i][0] == '-' && argv[i][1] == 'h') || (!strncmp(argv[i], "--help", 6)))){
+            USAGE();
         }
     }
 

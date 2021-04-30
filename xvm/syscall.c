@@ -13,14 +13,14 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin){
         // read syscall
         case XVM_SYSC_READ:{
             section_entry * temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r2);
-            int fd = (int)cpu->regs.r0;
-            size_t count = cpu->regs.r2;
+            int fd = (int)cpu->regs.r1;
+            size_t count = cpu->regs.r3;
 
-            if (cpu->regs.r1 + count > temp->v_addr + temp->v_size){
-                count = (temp->v_addr + temp->v_size) - cpu->regs.r1;
+            if (cpu->regs.r2 + count > temp->v_addr + temp->v_size){
+                count = (temp->v_addr + temp->v_size) - cpu->regs.r2;
             }
 
-            void * buf = get_reference(bin->x_section, cpu->regs.r1, PERM_WRITE);
+            void * buf = get_reference(bin->x_section, cpu->regs.r2, PERM_WRITE);
             cpu->regs.r0 = read(fd, buf, count);
             break;
         }
@@ -28,14 +28,14 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin){
         // write syscall
         case XVM_SYSC_WRITE: {
             section_entry * temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r2);
-            int fd = (int)cpu->regs.r0;
-            size_t count = cpu->regs.r2;
+            int fd = (int)cpu->regs.r1;
+            size_t count = cpu->regs.r3;
 
-            if (cpu->regs.r1 + count > temp->v_addr + temp->v_size){
-                count = (temp->v_addr + temp->v_size) - cpu->regs.r1;
+            if (cpu->regs.r2 + count > temp->v_addr + temp->v_size){
+                count = (temp->v_addr + temp->v_size) - cpu->regs.r2;
             }
 
-            void * buf = get_reference(bin->x_section, cpu->regs.r1, PERM_READ);
+            void * buf = get_reference(bin->x_section, cpu->regs.r2, PERM_READ);
             cpu->regs.r0 = write(fd, buf, count);
             break;
         }

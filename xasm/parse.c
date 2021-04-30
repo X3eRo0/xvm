@@ -7,6 +7,7 @@
 const char* mnemonics[XVM_NINSTR] = {
         [XVM_OP_MOV]  = "mov",
         [XVM_OP_MOVB] = "movb",
+        [XVM_OP_MOVW] = "movw",
         [XVM_OP_NOP]  = "nop",
         [XVM_OP_HLT]  = "hlt",
         [XVM_OP_RET]  = "ret",
@@ -39,7 +40,16 @@ const char* registers[XVM_NREGS] = {
         [reg_r2] = "$r2",
         [reg_r3] = "$r3",
         [reg_r4] = "$r4",
+        [reg_r5] = "$r5",
+        [reg_r6] = "$r6",
+        [reg_r7] = "$r7",
+        [reg_r8] = "$r8",
+        [reg_r9] = "$r9",
+        [reg_ra] = "$ra",
+        [reg_rb] = "$rb",
+        [reg_rc] = "$rc",
         [reg_pc] = "$pc",
+        [reg_bp] = "$bp",
         [reg_sp] = "$sp",
 };
 
@@ -81,7 +91,7 @@ u32 xasm_resolve_register_id(char* reg_s){
     return E_ERR;
 }
 
-u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
+u32 xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size){
     // check if argument exists
 
     if (args[0] == '\x00'){
@@ -146,7 +156,30 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
             }
 
             else {
-                xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", args);
+
+                if (calc_size){
+                    return sizeof(u32);
+                }
+
+                // check if base is a symbol or define
+
+                for (sym_entry * i = xasm->symtab->symbols; i != NULL; i = i->next){
+                    if (!strncmp(i->name, base, strlen(base))){
+                        arg->arg_type |= ARG_IMMD | ARG_PTRD;
+                        arg->opt_value = i->addr;
+                        return E_OK;
+                    }
+                }
+
+                for (sym_entry * i = xasm->define->symbols; i != NULL; i = i->next){
+                    if (!strncmp(i->name, base, strlen(base))){
+                        arg->arg_type |= ARG_IMMD | ARG_PTRD;
+                        arg->opt_value = i->addr;
+                        return E_OK;
+                    }
+                }
+
+                xasm_error(E_INVALID_SYNTAX, (u32)__LINE__, (char*)__PRETTY_FUNCTION__, "invalid argument : \"%s\"", base);
             }
 
             if (modifier[0] != '\x00' && (modifier[0] == '+' || modifier[0] == '-')){
@@ -172,13 +205,22 @@ u32 xasm_resolve_argument(arg* arg, symtab* symtab, char* args, bool calc_size){
     }
 
     // in case the argument is not either of the above
-    // assume it's a label and return address size
+    // assume it's a label or define and return address size
     if (calc_size){
         return sizeof(u32);
     }
 
     // check if argument is label
-    for (sym_entry * i = symtab->symbols; i != NULL; i = i->next){
+    for (sym_entry * i = xasm->symtab->symbols; i != NULL; i = i->next){
+        if (!strncmp(i->name, args, strlen(args))){
+            arg->arg_type |= ARG_IMMD;
+            arg->opt_value = i->addr;
+            return E_OK;
+        }
+    }
+
+    // check if argument is define
+    for (sym_entry * i = xasm->define->symbols; i != NULL; i = i->next){
         if (!strncmp(i->name, args, strlen(args))){
             arg->arg_type |= ARG_IMMD;
             arg->opt_value = i->addr;
@@ -380,6 +422,11 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         return size;
     }
 
+    if (!strncmp(line, "#define", 7)){
+        fini_arg(arg1); arg1 = NULL;
+        fini_arg(arg2); arg2 = NULL;
+        return 0;
+    }
 
     // check if line is a valid instruction
     if (sscanf(line, "%127s %127[^,\t\n], %127[^\t\n]", opcds, arg1s, arg2s) >= 1){
@@ -389,8 +436,8 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         opcd = xasm_resolve_opcode(opcds);
         size += 2; // size of opcode and mode byte in bytes
 
-        size += xasm_resolve_argument(arg1, xasm->symtab, arg1s, calc_size); // get size of arguments
-        size += xasm_resolve_argument(arg2, xasm->symtab, arg2s, calc_size); // get size of arguments
+        size += xasm_resolve_argument(arg1, xasm, arg1s, calc_size); // get size of arguments
+        size += xasm_resolve_argument(arg2, xasm, arg2s, calc_size); // get size of arguments
 
         if (!calc_size){ // instruction assembly
             // write opcode
@@ -464,6 +511,7 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
     char* comment   = NULL; // pointer to comment
     char* label     = NULL; // pointer to label
     char* newline   = NULL; // pointer to '\n'
+    char* define    = NULL; // pointer to '#'
     size_t size     = 0;    // size of line
 
     section_entry* current_section = default_section_entry;
@@ -488,8 +536,9 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
             clear_whitespaces(temp);
 
             comment = strchrnul(temp, ';');     // find comment
-            label = strchrnul(temp, ':');     // find label
-            newline = strchrnul(temp, '\n');    // find line end
+            label = strchrnul(temp, ':');       // find label
+            define = strchrnul(temp, '#');         // find defines
+            newline = strchrnul(temp, '\n');       // find line end
 
             // remove any comment or label symbol
             comment[0] = '\x00';
@@ -500,6 +549,16 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
                 continue;
             }
 
+            if (!strncmp(define, "#define", 7)){
+                define += 7;
+                clear_whitespaces(define);
+                temp = define;
+                skip_to_whitespace(define);
+                *define++ = '\x00';
+                clear_whitespaces(define);
+                add_symbol(xasm->define, temp, xasm_resolve_number(define));
+                continue;
+            }
 
             if (label < comment) {
                 add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
