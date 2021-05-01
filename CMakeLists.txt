@@ -40,3 +40,14 @@ add_executable(xinfo
     common/sections.c
     common/sections.h
 )
+
+add_executable(xdis
+    xasm/xdis.c
+    xasm/disasm.c
+    common/loader.c
+    common/loader.h
+    common/symbols.c
+    common/symbols.h
+    common/sections.c
+    common/sections.h
+)
