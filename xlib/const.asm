@@ -71,5 +71,8 @@
 #define PRNG_A          #0x4212
 #define PRNG_B          #0x9837
 #define PRNG_C          #0x117
+
+
+.section .data
 PRVS_N:
-    dd #0xCCCCCCCC
+    .dd #0xCCCCCCCC

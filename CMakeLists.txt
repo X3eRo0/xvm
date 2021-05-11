@@ -16,6 +16,7 @@ add_executable(xvm
     common/sections.c
     common/sections.h
     xvm/syscall.c
+    common/segfault.c
 )
 
 add_executable(xasm
@@ -29,6 +30,7 @@ add_executable(xasm
     common/sections.h
     common/loader.c
     common/loader.h
+    common/segfault.c
 )
 
 add_executable(xinfo
@@ -39,6 +41,7 @@ add_executable(xinfo
     common/symbols.h
     common/sections.c
     common/sections.h
+    common/segfault.c
 )
 
 add_executable(xdis
@@ -50,4 +53,5 @@ add_executable(xdis
     common/symbols.h
     common/sections.c
     common/sections.h
+    common/segfault.c
 )

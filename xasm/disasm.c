@@ -15,25 +15,45 @@ const char* mnemonics[XVM_NINSTR] = {
         [XVM_OP_CALL] = "call",
         [XVM_OP_SYSC] = "syscall",
         [XVM_OP_ADD]  = "add",
+        [XVM_OP_ADDB]  = "addb",
+        [XVM_OP_ADDW]  = "addw",
         [XVM_OP_SUB]  = "sub",
+        [XVM_OP_SUBB]  = "subb",
+        [XVM_OP_SUBW]  = "subw",
         [XVM_OP_MUL]  = "mul",
+        [XVM_OP_MULB]  = "mulb",
+        [XVM_OP_MULW]  = "mulw",
         [XVM_OP_DIV]  = "div",
+        [XVM_OP_DIVB]  = "divb",
+        [XVM_OP_DIVW]  = "divw",
         [XVM_OP_XOR]  = "xor",
+        [XVM_OP_XORB]  = "xorb",
+        [XVM_OP_XORW]  = "xorw",
         [XVM_OP_AND]  = "and",
+        [XVM_OP_ANDB]  = "andb",
+        [XVM_OP_ANDW]  = "andw",
         [XVM_OP_OR]   = "or",
+        [XVM_OP_ORB]   = "orb",
+        [XVM_OP_ORW]   = "orw",
         [XVM_OP_NOT]  = "not",
+        [XVM_OP_NOTB]  = "notb",
+        [XVM_OP_NOTW]  = "notw",
         [XVM_OP_PUSH] = "push",
         [XVM_OP_POP]  = "pop",
         [XVM_OP_XCHG] = "xchg",
         [XVM_OP_INC]  = "inc",
         [XVM_OP_DEC]  = "dec",
         [XVM_OP_CMP]  = "cmp",
+        [XVM_OP_CMPB]  = "cmpb",
+        [XVM_OP_CMPW]  = "cmpw",
         [XVM_OP_TEST] = "test",
         [XVM_OP_JMP]  = "jmp",
         [XVM_OP_JZ]   = "jz",
         [XVM_OP_JNZ]  = "jnz",
         [XVM_OP_JA]   = "ja",
         [XVM_OP_JB]   = "jb",
+        [XVM_OP_JAE]  = "jae",
+        [XVM_OP_JBE]  = "jbe",
 };
 
 const char* registers[XVM_NREGS] = {
@@ -75,8 +95,7 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
     if (ninstr == 0){
         ninstr = -1;
     }
-
-    for (u32 i = 0; (pc < text->m_ofst - 4) && i < ninstr; i++){
+    for (u32 i = 0; (pc < text->m_ofst) && i < ninstr; i++){
 
         imm = text->v_addr + pc;
         temp = resolve_symbol_name(bin->x_symtab, imm);
@@ -107,7 +126,11 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
                 temp = resolve_symbol_name(bin->x_symtab, imm);
 
                 if (temp == NULL){
-                    printf(KMAG "#0x%x" KNRM, imm);
+                    if (((signed int) imm) < 0){
+                        printf(KMAG "#0x%x" KNRM, -1 * imm);
+                    } else {
+                        printf(KMAG "#0x%x" KNRM, (signed  int)imm);
+                    }
                 } else {
                     printf(KGRN "%s" KNRM, temp);
                 }
@@ -123,16 +146,25 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
                         printf("%s", registers[bytecode[pc++]]);
                     }
 
-                    if (mode1 == (ARG_REGD | ARG_IMMD)){
-                        printf(" + ");
+                    if ((mode1 & ARG_REGD) && (mode1 & ARG_IMMD)){
+                        imm = *(u32 *)&bytecode[pc];
+                        if (((signed int) imm) < 0 && imm != 0){
+                            printf(" - ");
+                        } else {
+                            printf(" + ");
+                        }
                     }
 
                     if (mode1 & ARG_IMMD){
-                        imm = *(u32 *)&bytecode[pc];
                         temp = resolve_symbol_name(bin->x_symtab, imm);
 
                         if (temp == NULL){
-                            printf(KMAG "#0x%x" KNRM, imm);
+                            if (((signed int) imm) < 0){
+                                printf(KMAG "#0x%x" KNRM, -1 * imm);
+                            } else {
+                                printf(KMAG "#0x%x" KNRM, (signed  int)imm);
+                            }
+
                         } else {
                             printf(KGRN "%s" KNRM, temp);
                         }
@@ -159,7 +191,11 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
                 temp = resolve_symbol_name(bin->x_symtab, imm);
 
                 if (temp == NULL){
-                    printf(KMAG "#0x%x" KNRM, imm);
+                    if (((signed int) imm) < 0){
+                        printf(KMAG "#0x%x" KNRM, -1 * imm);
+                    } else {
+                        printf(KMAG "#0x%x" KNRM, (signed  int)imm);
+                    }
                 } else {
                     printf(KGRN "%s" KNRM, temp);
                 }
@@ -174,8 +210,13 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
                         printf("%s", registers[bytecode[pc++]]);
                     }
 
-                    if (mode2 == (ARG_REGD | ARG_IMMD)){
-                        printf(" + ");
+                    if ((mode2 & ARG_REGD) && (mode2 & ARG_IMMD)){
+                        imm = *(u32 *)&bytecode[pc];
+                        if (((signed int) imm) < 0 && imm != 0){
+                            printf(" - ");
+                        } else {
+                            printf(" + ");
+                        }
                     }
 
                     if (mode2 & ARG_IMMD){
@@ -183,7 +224,12 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
                         temp = resolve_symbol_name(bin->x_symtab, imm);
 
                         if (temp == NULL){
-                            printf(KMAG "#0x%x" KNRM, imm);
+                            if (((signed int) imm) < 0 ){
+                                printf(KMAG "#0x%x" KNRM, -1 * imm);
+                            } else {
+                                printf(KMAG "#0x%x" KNRM, (signed  int)imm);
+                            }
+
                         } else {
                             printf(KGRN "%s" KNRM, temp);
                         }

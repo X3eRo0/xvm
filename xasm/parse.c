@@ -14,25 +14,45 @@ const char* mnemonics[XVM_NINSTR] = {
         [XVM_OP_CALL] = "call",
         [XVM_OP_SYSC] = "syscall",
         [XVM_OP_ADD]  = "add",
+        [XVM_OP_ADDB]  = "addb",
+        [XVM_OP_ADDW]  = "addw",
         [XVM_OP_SUB]  = "sub",
+        [XVM_OP_SUBB]  = "subb",
+        [XVM_OP_SUBW]  = "subw",
         [XVM_OP_MUL]  = "mul",
+        [XVM_OP_MULB]  = "mulb",
+        [XVM_OP_MULW]  = "mulw",
         [XVM_OP_DIV]  = "div",
+        [XVM_OP_DIVB]  = "divb",
+        [XVM_OP_DIVW]  = "divw",
         [XVM_OP_XOR]  = "xor",
+        [XVM_OP_XORB]  = "xorb",
+        [XVM_OP_XORW]  = "xorw",
         [XVM_OP_AND]  = "and",
+        [XVM_OP_ANDB]  = "andb",
+        [XVM_OP_ANDW]  = "andw",
         [XVM_OP_OR]   = "or",
+        [XVM_OP_ORB]   = "orb",
+        [XVM_OP_ORW]   = "orw",
         [XVM_OP_NOT]  = "not",
+        [XVM_OP_NOTB]  = "notb",
+        [XVM_OP_NOTW]  = "notw",
         [XVM_OP_PUSH] = "push",
         [XVM_OP_POP]  = "pop",
         [XVM_OP_XCHG] = "xchg",
         [XVM_OP_INC]  = "inc",
         [XVM_OP_DEC]  = "dec",
         [XVM_OP_CMP]  = "cmp",
+        [XVM_OP_CMPB]  = "cmpb",
+        [XVM_OP_CMPW]  = "cmpw",
         [XVM_OP_TEST] = "test",
         [XVM_OP_JMP]  = "jmp",
         [XVM_OP_JZ]   = "jz",
         [XVM_OP_JNZ]  = "jnz",
         [XVM_OP_JA]   = "ja",
         [XVM_OP_JB]   = "jb",
+        [XVM_OP_JAE]  = "jae",
+        [XVM_OP_JBE]  = "jbe",
 };
 
 const char* registers[XVM_NREGS] = {
@@ -192,7 +212,7 @@ u32 xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size){
             if (modifier[0] != '\x00' && (modifier[0] == '+' || modifier[0] == '-')){
                 sign = get_sign(modifier[0]);
 
-                if (index[0] != '\x00' && index[0] == '#'){
+                if (index[0] != '\x00') {
                     if (!calc_size) {
                         arg->arg_type |= ARG_IMMD;
                         arg->opt_value = sign * xasm_resolve_number(index);
@@ -254,8 +274,8 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
     arg* arg1 = init_arg();
     arg* arg2 = init_arg();
 
-    if (!strncmp(line, "section", 7)){ // defining section
-        line += 7; // "section" skip these 7 bytes
+    if (!strncmp(line, ".section", 7)){ // defining section
+        line += 8; // "section" skip these 7 bytes
         // skip to first non whitespace character
 
         clear_whitespaces(line);
@@ -326,10 +346,10 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         return 0;
     }
 
-    // check if line is a valid db, dw, dd, ascii command
+    // check if line is a valid db, dw, dd, .asciz command
 
-    if (!strncmp(line, "db", 2)){ // db
-        line += 2; // "db" skip these 2 bytes
+    if (!strncmp(line, ".db", 3)){ // db
+        line += 3; // "db" skip these 2 bytes
         // skip to first non whitespace character
 
         clear_whitespaces(line);
@@ -354,10 +374,10 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         return size;
     }
 
-    // check if line is a valid db or ascii
+    // check if line is a valid db or asciz
 
-    if (!strncmp(line, "dw", 2)){ // dw
-        line += 2; // "dw" skip these 2 bytes
+    if (!strncmp(line, ".dw", 3)){ // dw
+        line += 3; // "dw" skip these 2 bytes
         // skip to first non whitespace character
 
         clear_whitespaces(line);
@@ -382,8 +402,8 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         return size;
     }
 
-    if (!strncmp(line, "dd", 2)){ // dd
-        line += 2; // "dd" skip these 2 bytes
+    if (!strncmp(line, ".dd", 3)){ // dd
+        line += 3; // "dd" skip these 2 bytes
         // skip to first non whitespace character
 
         clear_whitespaces(line);
@@ -408,8 +428,8 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         return size;
     }
 
-    if (!strncmp(line, "ascii", 5)){ // ascii
-        line += 5; // "ascii" skip these 5 bytes
+    if (!strncmp(line, ".asciz", 6)){ // asciz
+        line += 6; // "asciz" skip these 5 bytes
         // skip to first non whitespace character
 
         clear_whitespaces(line);
@@ -421,7 +441,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
                 memcpy_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, line, size); // +1 for null byte
             }
         } else {
-            xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to 'ascii' does not begin with (\") : %s\n", line);
+            xasm_error(E_INVALID_SYNTAX, __LINE__, (char*)__PRETTY_FUNCTION__, "argument to '.asciz' does not begin with (\") : %s\n", line);
         }
 
         fini_arg(arg1); arg1 = NULL;
@@ -519,6 +539,7 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
     char* label     = NULL; // pointer to label
     char* newline   = NULL; // pointer to '\n'
     char* define    = NULL; // pointer to '#'
+    char* asciz     = NULL; // pointer to ".asciz"
     size_t size     = 0;    // size of line
 
     section_entry* current_section = default_section_entry;
@@ -542,21 +563,26 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
 
             clear_whitespaces(temp);
 
-            comment = strchrnul(temp, ';');     // find comment
-            label = strchrnul(temp, ':');       // find label
-            define = strchrnul(temp, '#');         // find defines
-            newline = strchrnul(temp, '\n');       // find line end
+            asciz = strstr(temp, ".asciz");     // find asciz
+            if (asciz == NULL) {
+                comment = strchrnul(temp, ';');     // find comment
+                label = strchrnul(temp, ':');       // find label
+                define = strchrnul(temp, '#');      // find defines
+                newline = strchrnul(temp, '\n');    // find line end
 
-            // remove any comment or label symbol
-            comment[0] = '\x00';
-            label[0] = '\x00';
-            newline[0] = '\x00';
+                // remove any comment or label symbol
+                comment[0] = '\x00';
+                label[0] = '\x00';
+                newline[0] = '\x00';
+
+            }
+
 
             if (is_line_empty(temp)) {
                 continue;
             }
 
-            if (!strncmp(define, "#define", 7)){
+            if (define != NULL && !strncmp(define, "#define", 7)){
                 define += 7;
                 clear_whitespaces(define);
                 temp = define;
@@ -567,7 +593,7 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
                 continue;
             }
 
-            if (label < comment) {
+            if (label < comment && asciz == NULL) {
                 add_symbol(xasm->symtab, temp, current_section->a_size + current_section->v_addr); // append the symbol
                 temp = ++label;         // process the rest of the string
                 clear_whitespaces(temp);
@@ -583,7 +609,6 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
 
         rewind(xasm->ifile);    // rewind the file
         current_section = default_section_entry;
-
     }
 
     reset_address_of_sections(xasm->sections);
@@ -593,27 +618,30 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
     for (u32 i = 0; i < ifiles; i++) {
 
         xasm->ifile = inputf[i];
+        current_section = default_section_entry;
+
         while (getline(&line, &size, xasm->ifile) > 0) {
             temp = line;
 
-            while (is_white_space(temp)) {
-                temp++;
+            clear_whitespaces(temp);
+
+            asciz = strstr(temp, ".asciz");
+            if (asciz == NULL) {
+                comment = strchrnul(temp, ';');     // find comment
+                label = strchrnul(temp, ':');     // find label
+                newline = strchrnul(temp, '\n');    // find line end
+
+                // remove any comment or label symbol
+                comment[0] = '\x00';
+                label[0] = '\x00';
+                newline[0] = '\x00';
             }
-
-            comment = strchrnul(temp, ';');     // find comment
-            label = strchrnul(temp, ':');     // find label
-            newline = strchrnul(temp, '\n');    // find line end
-
-            // remove any comment or label symbol
-            comment[0] = '\x00';
-            label[0] = '\x00';
-            newline[0] = '\x00';
 
             if (is_line_empty(temp)) {
                 continue;
             }
 
-            if (label < comment) {
+            if (label < comment && asciz == NULL) {
                 continue;
             }
 

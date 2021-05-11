@@ -2,6 +2,9 @@
 // Created by X3eRo0 on 4/17/2021.
 //
 
+// TODO: add Left and Right Shift Instructions
+// TODO: add more syscalls
+
 #include "cpu.h"
 
 /*static xvm_instr instructions[] = {
@@ -26,18 +29,26 @@ u32 * get_register(xvm_cpu * cpu, u8 reg_id){
         case pc: return &cpu->regs.pc;
         case bp: return &cpu->regs.bp;
         case sp: return &cpu->regs.sp;
-        default: return NULL;
+        default: {
+            fprintf(stderr, "[" KRED "-" KNRM "] Invalid Register\n");
+            exit(-1);
+        };
     }
 }
 
-u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2, u8 narg){
+u8 get_argument(xvm_cpu *cpu, xvm_bin *bin, u8 mode, u32 **arg1, u32 **arg2) {
     u32 size = 2; // opcode, mode
     u8  mode1 = get_mode1(mode);
     u8  mode2 = get_mode2(mode);
 
-    if (narg > 0){
+    if (!mode1 && mode2){
+        // invalid mode;
+        fprintf(stderr, "[" KRED "-" KNRM "] Invalid Mode Byte\n");
+        exit(-1);
+    }
+
+    if (mode1){
         switch (mode1){
-            case XVM_NARG: break;
             case XVM_REGD: {
                 *arg1 = get_register(cpu, read_byte(bin->x_section, cpu->regs.pc++, PERM_EXEC));
                 size += sizeof(u8);
@@ -55,7 +66,7 @@ u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2,
                     u32 immd = 0;
                     if (mode1 & XVM_REGD){ // pointer has a register as base at least
                         reg_ptr = *get_register(cpu, read_byte(bin->x_section, cpu->regs.pc, PERM_EXEC));
-                        *arg1 = get_reference(bin->x_section, reg_ptr, PERM_READ);
+                        *arg1 = get_reference(bin->x_section, reg_ptr, PERM_WRITE);
                         cpu->regs.pc++;
                         size += sizeof(u8);
                     }
@@ -68,16 +79,15 @@ u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2,
                     break;
                 } else {
                     // invalid mode;
-                    printf("Invalid Mode: 0x%x\n", mode1);
-                    break;
+                    fprintf(stderr, "[" KRED "-" KNRM "] Invalid Mode Byte\n");
+                    exit(-1);
                 }
             }
         }
     }
 
-    if (narg > 1){
+    if (mode2){
         switch (mode2) {
-            case XVM_NARG: break;
             case XVM_REGD: {
                 *arg2 = get_register(cpu, read_byte(bin->x_section, cpu->regs.pc++, PERM_EXEC));
                 size += sizeof(u8);
@@ -102,14 +112,14 @@ u8 get_argument(xvm_cpu * cpu, xvm_bin * bin, u8 mode, u32 ** arg1, u32 ** arg2,
                     if (mode2 & XVM_IMMD){ // pointer has an immediate offset also
                         immd = *get_reference(bin->x_section, cpu->regs.pc, PERM_EXEC);
                         cpu->regs.pc += sizeof(u32);
-                        *arg2 = get_reference(bin->x_section, reg_ptr + immd, PERM_EXEC);
+                        *arg2 = get_reference(bin->x_section, reg_ptr + immd, PERM_READ);
                         size += sizeof(u32);
                     }
                     break;
                 } else {
                     // invalid mode;
-                    printf("Invalid Mode: 0x%x\n", mode1);
-                    break;
+                    fprintf(stderr, "[" KRED "-" KNRM "] Invalid Mode Byte\n");
+                    exit(-1);
                 }
             }
         }
@@ -124,18 +134,8 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
     u32 size = 0;
     u8  opcd = read_byte(bin->x_section, cpu->regs.pc++, PERM_EXEC);
     u8  mode = read_byte(bin->x_section, cpu->regs.pc++, PERM_EXEC);
-    u8  narg = 0;
-
-    if (get_mode1(mode)){
-        narg += 1;
-    }
-
-    if (get_mode2(mode)){
-        narg += 1;
-    }
-
     // resolve arguments
-    size = get_argument(cpu, bin, mode, &arg1, &arg2, narg);
+    size = get_argument(cpu, bin, mode, &arg1, &arg2);
 
     switch(opcd){
 
@@ -153,24 +153,45 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // mov
         case XVM_OP_MOV: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 = *arg2;
             break;
         }
 
         case XVM_OP_MOVB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *(u8 *)arg1 = *(u8 *)arg2;
             break;
         }
 
         case XVM_OP_MOVW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *(u16 *)arg1 = *(u16 *)arg2;
+            break;
         }
 
         // call
         case XVM_OP_CALL: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             // push eip
+            cpu->regs.sp -= sizeof(u32);
             write_dword(bin->x_section, cpu->regs.sp, cpu->regs.pc);
-            cpu->regs.sp += sizeof(u32);
             // eip = imm
             cpu->regs.pc = *arg1;
             break;
@@ -179,14 +200,54 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
         // ret
         case XVM_OP_RET: {
             // pop eip
-            cpu->regs.sp -= sizeof(u32);
             cpu->regs.pc = read_dword(bin->x_section, cpu->regs.sp, PERM_WRITE);
+            cpu->regs.sp += sizeof(u32);
+
             break;
         }
 
         // xor
         case XVM_OP_XOR: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 ^= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_XORB:{
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8*)arg1 ^= *(u8*)arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_XORW:{
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16*)arg1 ^= *(u16*)arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -199,7 +260,46 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // and
         case XVM_OP_AND: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 &= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_ANDB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8 *)arg1 &= *(u8 *)arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_ANDW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16 *)arg1 &= *(u16 *)arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -212,7 +312,46 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // or
         case XVM_OP_OR: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 |= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_ORB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8 *)arg1 |= *(u8 *)arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_ORW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16 *)arg1 |= *(u16 *)arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -225,7 +364,46 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // not
         case XVM_OP_NOT: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 = ~*arg1;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_NOTB: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8 *)arg1 = ~*(u8 *)arg1;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_NOTW: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16 *)arg1 = ~*(u16 *)arg1;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -238,7 +416,46 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // add
         case XVM_OP_ADD: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 += *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_ADDB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8 *)arg1 += *(u8 *)arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_ADDW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16 *)arg1 += *(u16 *)arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -251,7 +468,46 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // sub
         case XVM_OP_SUB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 -= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_SUBB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8 *)arg1 -= *(u8 *)arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_SUBW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16 *)arg1 -= *(u16 *)arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -264,7 +520,46 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // mul
         case XVM_OP_MUL: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 *= *arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_MULB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u8 *)arg1 *= *(u8 *)arg2;
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_MULW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            *(u16 *)arg1 *= *(u16 *)arg2;
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -278,13 +573,65 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
         // div
         case XVM_OP_DIV: {
 
-            if (arg2 == 0){
-                // FIXME: Give divide by zero error
-                break;
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
             }
 
+            if (*arg2 == 0){
+                cpu_error(XVM_FP_EXCEPTION, "FATAL", cpu->regs.pc);
+            }
+
+            u32 modulo = *arg1 % *arg2;
             *arg1 /= *arg2;
-            cpu->regs.r1 = *arg1 % *arg2;
+            cpu->regs.r5 = modulo;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_DIVB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            if (*(u8 *)arg2 == 0){
+                cpu_error(XVM_FP_EXCEPTION, "FATAL", cpu->regs.pc);
+            }
+
+            u32 modulo = *(u8 *)arg1 % *(u8 *)arg2;
+            *(u8 *)arg1 /= *(u8 *)arg2;
+            cpu->regs.r5 = modulo;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_DIVW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            if (*(u16 *)arg2 == 0){
+                cpu_error(XVM_FP_EXCEPTION, "FATAL", cpu->regs.pc);
+            }
+
+            u32 modulo = *(u16 *)arg1 % *(u16 *)arg2;
+            *(u16 *)arg1 /= *(u16 *)arg2;
+            cpu->regs.r5 = modulo;
 
             if (*arg1 == 0){
                 set_ZF(cpu, 1);
@@ -298,20 +645,35 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // push
         case XVM_OP_PUSH: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            cpu->regs.sp -= sizeof(u32);
             write_dword(bin->x_section, cpu->regs.sp, *arg1);
-            cpu->regs.sp += sizeof(u32);
             break;
         }
 
         // pop
         case XVM_OP_POP: {
-            cpu->regs.sp -= sizeof(u32);
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             *arg1 = read_dword(bin->x_section, cpu->regs.sp, PERM_WRITE);
+            cpu->regs.sp += sizeof(u32);
             break;
         }
 
         // xchg
         case XVM_OP_XCHG: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             u32 temp = *arg1;
             *arg1 = *arg2;
             *arg2 = temp;
@@ -320,6 +682,11 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // inc
         case XVM_OP_INC: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             (*arg1)++;
 
             if (*arg1 == 0){
@@ -335,6 +702,11 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // dec
         case XVM_OP_DEC: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             (*arg1)--;
 
             if (*arg1 == 0){
@@ -350,16 +722,62 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // cmp
         case XVM_OP_CMP: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             if (*arg1 == *arg2){
                 set_ZF(cpu, 1);
             }
 
-            if (*arg1 < *arg1){
+            if (*arg1 < *arg2) {
                 set_ZF(cpu, 0);
                 set_CF(cpu, 1);
             }
-
             if (*arg1 > *arg2){
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_CMPB: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            if (*(u8 *)arg1 == *(u8 *)arg2){
+                set_ZF(cpu, 1);
+            }
+
+            if (*(u8 *)arg1 < *(u8 *)arg2) {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 1);
+            }
+            if (*(u8 *)arg1 > *(u8 *)arg2){
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        case XVM_OP_CMPW: {
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            if (*(u16 *)arg1 == *(u16 *)arg2){
+                set_ZF(cpu, 1);
+            }
+
+            if (*(u16 *)arg1 < *(u16 *)arg2) {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 1);
+            }
+            if (*(u16 *)arg1 > *(u16 *)arg2){
                 set_ZF(cpu, 0);
                 set_CF(cpu, 0);
             }
@@ -368,6 +786,11 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // test
         case XVM_OP_TEST:{
+
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             if ((*arg1 & *arg2) == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
@@ -380,20 +803,36 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // jmp
         case XVM_OP_JMP: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             cpu->regs.pc = *arg1;
             break;
         }
 
         // jz
         case XVM_OP_JZ: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             if (get_ZF(cpu)){
                 cpu->regs.pc = *arg1;
             }
+
             break;
         }
 
         // jnz
         case XVM_OP_JNZ: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             if (!get_ZF(cpu)){
                 cpu->regs.pc = *arg1;
             }
@@ -402,6 +841,11 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // ja
         case XVM_OP_JA: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             if (!get_ZF(cpu) && !get_CF(cpu)){
                 cpu->regs.pc = *arg1;
             }
@@ -410,7 +854,36 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
 
         // jb
         case XVM_OP_JB: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
             if (!get_ZF(cpu) && get_CF(cpu)){
+                cpu->regs.pc = *arg1;
+            }
+            break;
+        }
+        // jae
+        case XVM_OP_JAE: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            if (!get_CF(cpu)){
+                cpu->regs.pc = *arg1;
+            }
+            break;
+        }
+        // jbe
+        case XVM_OP_JBE: {
+
+            if (!arg1){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+
+            if (get_ZF(cpu) || get_CF(cpu)){
                 cpu->regs.pc = *arg1;
             }
             break;

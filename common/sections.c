@@ -24,7 +24,7 @@ u32* get_reference(section *sec, u32 addr, u8 opt_perm) {
     // read byte
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return ((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -78,6 +78,7 @@ u32 read_dword(section* sec, u32 addr, u8 opt_perm){
 
 u32 write_section_entry_to_file(section_entry* sec_entry, FILE* file){
 
+    fwrite("\xEF\xBE\xAD\xDE", sizeof(u32), 1, file);
     fwrite(sec_entry->m_name, sizeof(u8), strlen(sec_entry->m_name) + 1, file);
     fwrite(&sec_entry->v_size, sizeof(u32), 1, file);
     fwrite(&sec_entry->v_addr, sizeof(u32), 1, file);
@@ -268,6 +269,7 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
 
     size = (size % 0x1000) == 0 ? size : (size/0x1000 + 1) * 0x1000;
     size = size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : size;
+    size = size == 0 ? 0x1000 : size;
 
     if ((u64) addr + (u64) size > 0x100000000){
         return NULL;
@@ -348,6 +350,7 @@ section_entry* find_section_entry_by_name(section* sec, char* name){
         temp = temp->next;
     }
 
+    segfault(XVM_INVALID_ADDR, NULL, 0);
     return NULL;
 }
 
@@ -361,6 +364,7 @@ section_entry* find_section_entry_by_addr(section* sec, u32 addr){
         temp = temp->next;
     }
 
+    segfault(XVM_INVALID_ADDR, NULL, addr);
     return NULL;
 }
 
@@ -436,7 +440,7 @@ u32 write_buffer_to_section_by_addr(section* sec, u32 addr, u32 buffer, u32 writ
     section_entry* temp = sec->sections;
 
     while (temp != NULL){
-        if (addr >= temp->v_addr && addr <= temp->v_addr + temp->v_size){
+        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size){
             break;
         }
         temp = temp->next;
@@ -524,20 +528,4 @@ u32 fini_section(section* sec){
     sec->sections = NULL;
     free(sec); sec = NULL;
     return E_OK;
-}
-
-void segfault(u32 error, section_entry* sec_entry, u32 addr){
-    fprintf(stderr, "Segmentation Fault : ");
-    if (sec_entry != NULL){
-        fprintf(stderr, "%s-%d-0x%x : ", sec_entry->m_name, sec_entry->m_flag, sec_entry->v_addr);
-    }
-    switch (error) {
-        case XVM_INVALID_ADDR: fprintf(stderr, "Invalid Address @ 0x%x\n", addr);break;
-        case XVM_INVALID_READ: fprintf(stderr, "Invalid Read @ 0x%x\n", addr);break;
-        case XVM_INVALID_WRITE: fprintf(stderr, "Invalid Write @ 0x%x\n", addr);break;
-        case XVM_INVALID_EXEC: fprintf(stderr, "Invalid Code @ 0x%x\n", addr);break;
-        default: fprintf(stderr, "XVM BRUH MOMENT\n");break;
-    }
-
-    exit((int) error);
 }

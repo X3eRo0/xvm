@@ -62,20 +62,35 @@ xvm_cpu * init_xvm_cpu(){
     return cpu;
 }
 
+void cpu_error(u32 error, char *msg, u32 addr) {
+    fprintf(stderr, "[" KRED "-" KNRM "] ");
+    switch (error) {
+        case XVM_FP_EXCEPTION: fprintf(stderr, "Divide by 0 : %s @ 0x%x\n", msg, addr);break;
+        case XVM_ILLEGAL_INST: fprintf(stderr, "Illegal Instruction : %s @ 0x%x\n", msg, addr); break;
+        default: fprintf(stderr, "XVM BRUH MOMENT\n");break;
+    }
+
+    exit((int) error);
+}
+
 // FIXME: REMOVE IN RELEASE
 
-//void show_registers(xvm_cpu* cpu){
-//    printf("\n\nPC -- 0x%.8X\n", cpu->regs.pc);
-//    printf("$r0 : 0x%.8X\t$r1 : 0x%.8X\t$r2 : 0x%.8X\t$r3 : 0x%.8X\n", cpu->regs.r0, cpu->regs.r1, cpu->regs.r2, cpu->regs.r3);
-//    printf("$r4 : 0x%.8X\t$r5 : 0x%.8X\t$r6 : 0x%.8X\t$r7 : 0x%.8X\n", cpu->regs.r4, cpu->regs.r5, cpu->regs.r6, cpu->regs.r7);
-//    printf("$r8 : 0x%.8X\t$r9 : 0x%.8X\t$ra : 0x%.8X\t$rb : 0x%.8X\n", cpu->regs.r8, cpu->regs.r9, cpu->regs.ra, cpu->regs.rb);
-//    printf("$rc : 0x%.8X\t$pc : 0x%.8X\t$bp : 0x%.8X\t$sp : 0x%.8X\n", cpu->regs.rc, cpu->regs.pc, cpu->regs.bp, cpu->regs.sp);
-//}
+void show_registers(xvm_cpu* cpu, xvm_bin * bin){
+    printf("\n\nPC -- 0x%.8X [ZF : %s] [CF : %s]\n", cpu->regs.pc, (get_ZF(cpu)==1? "True" : "False"), (get_CF(cpu)==1? "True" : "False"));
+    printf("$r0 : 0x%.8X\n$r1 : 0x%.8X\n$r2 : 0x%.8X\n$r3 : 0x%.8X\n", cpu->regs.r0, cpu->regs.r1, cpu->regs.r2, cpu->regs.r3);
+    printf("$r4 : 0x%.8X\n$r5 : 0x%.8X\n$r6 : 0x%.8X\n$r7 : 0x%.8X\n", cpu->regs.r4, cpu->regs.r5, cpu->regs.r6, cpu->regs.r7);
+    printf("$r8 : 0x%.8X\n$r9 : 0x%.8X\n$ra : 0x%.8X\n$rb : 0x%.8X\n", cpu->regs.r8, cpu->regs.r9, cpu->regs.ra, cpu->regs.rb);
+    printf("$rc : 0x%.8X\n$pc : 0x%.8X\n$bp : 0x%.8X\n$sp : 0x%.8X\n", cpu->regs.rc, cpu->regs.pc, cpu->regs.bp, cpu->regs.sp);
+
+    for (u32 i = XVM_DFLT_SP; i >= cpu->regs.sp; i -= 4){
+        printf("0x%.8X : 0x%.8X\n", i, read_dword(bin->x_section, i, PERM_READ));
+    }
+}
 
 void fde_cpu(xvm_cpu *cpu, xvm_bin *bin){
     u32 instr_size = 0;
     while (get_RF(cpu)){
-        // show_registers(cpu);
+        // show_registers(cpu, bin);
         instr_size = do_execute(cpu, bin);
     }
 }

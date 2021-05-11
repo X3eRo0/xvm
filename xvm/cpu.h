@@ -23,25 +23,45 @@ typedef enum xvm_opcd_t {
     XVM_OP_CALL,
     XVM_OP_SYSC,
     XVM_OP_ADD,
+    XVM_OP_ADDB,
+    XVM_OP_ADDW,
     XVM_OP_SUB,
+    XVM_OP_SUBB,
+    XVM_OP_SUBW,
     XVM_OP_MUL,
+    XVM_OP_MULB,
+    XVM_OP_MULW,
     XVM_OP_DIV,
+    XVM_OP_DIVB,
+    XVM_OP_DIVW,
     XVM_OP_XOR,
+    XVM_OP_XORB,
+    XVM_OP_XORW,
     XVM_OP_AND,
+    XVM_OP_ANDB,
+    XVM_OP_ANDW,
     XVM_OP_OR,
+    XVM_OP_ORB,
+    XVM_OP_ORW,
     XVM_OP_NOT,
+    XVM_OP_NOTB,
+    XVM_OP_NOTW,
     XVM_OP_PUSH,
     XVM_OP_POP,
     XVM_OP_XCHG,
     XVM_OP_INC,
     XVM_OP_DEC,
     XVM_OP_CMP,
+    XVM_OP_CMPB,
+    XVM_OP_CMPW,
     XVM_OP_TEST,
     XVM_OP_JMP,
     XVM_OP_JZ,
     XVM_OP_JNZ,
     XVM_OP_JA,
     XVM_OP_JB,
+    XVM_OP_JAE,
+    XVM_OP_JBE,
 } xvm_opcodes;
 
 typedef enum xvm_sysc_t {
@@ -94,21 +114,21 @@ typedef enum {
     XVM_ZF, // zero flag
     XVM_CF, // carry flag
     XVM_RF, // CPU Halt status
+    XVM_SF,
 } xvm_flag_pos;
 
 typedef enum {
-    XVM_NARG = 0,
-    XVM_REGD = 1,
-    XVM_IMMD = 2,
-    XVM_PTRD = 4,
+    XVM_NARG,
+    XVM_REGD,
+    XVM_IMMD,
+    XVM_PTRD,
 } xvm_modes;
 
-typedef struct xvm_instr_t
-{
-    u8 opcode;
-    u32 (*instr)(u8 mode, u8 arg1, u8 arg2, u32 imm1, u32 imm2);
-} xvm_instr;
+typedef enum {
+    XVM_FP_EXCEPTION,
+    XVM_ILLEGAL_INST,
 
+} cpu_errors;
 
 typedef struct xvm_flags_t {
     u8 flags;
@@ -127,12 +147,13 @@ u8 get_ZF(xvm_cpu* cpu);
 u8 set_RF(xvm_cpu* cpu, u8 bit);
 u8 set_CF(xvm_cpu* cpu, u8 bit);
 u8 set_ZF(xvm_cpu* cpu, u8 bit);
-u8 get_argument(xvm_cpu* cpu, xvm_bin* bin, u8 mode, u32** arg1, u32** arg2, u8 narg);
+u8 get_argument(xvm_cpu *cpu, xvm_bin *bin, u8 mode, u32 **arg1, u32 **arg2);
 u32 *get_register(xvm_cpu* cpu, u8 reg_id);
 u32  do_execute(xvm_cpu* cpu, xvm_bin* bin);
 u32  do_syscall(xvm_cpu* cpu, xvm_bin* bin);
+void cpu_error(u32 error, char *msg, u32 addr);
 void fde_cpu(xvm_cpu* cpu, xvm_bin* bin);
-// void show_registers(xvm_cpu* cpu);
+void show_registers(xvm_cpu* cpu, xvm_bin* bin);
 void update_flags(xvm_cpu * cpu, u32 res);
 void fini_xvm_cpu(xvm_cpu * cpu);
 

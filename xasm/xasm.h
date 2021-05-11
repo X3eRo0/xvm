@@ -14,7 +14,7 @@
 #include "../common/loader.h"
 
 
-#define XVM_NINSTR  28
+#define XVM_NINSTR  48
 #define XVM_NREGS   16
 
 
@@ -30,25 +30,45 @@ typedef enum {
     XVM_OP_CALL,
     XVM_OP_SYSC,
     XVM_OP_ADD,
+    XVM_OP_ADDB,
+    XVM_OP_ADDW,
     XVM_OP_SUB,
+    XVM_OP_SUBB,
+    XVM_OP_SUBW,
     XVM_OP_MUL,
+    XVM_OP_MULB,
+    XVM_OP_MULW,
     XVM_OP_DIV,
+    XVM_OP_DIVB,
+    XVM_OP_DIVW,
     XVM_OP_XOR,
+    XVM_OP_XORB,
+    XVM_OP_XORW,
     XVM_OP_AND,
+    XVM_OP_ANDB,
+    XVM_OP_ANDW,
     XVM_OP_OR,
+    XVM_OP_ORB,
+    XVM_OP_ORW,
     XVM_OP_NOT,
+    XVM_OP_NOTB,
+    XVM_OP_NOTW,
     XVM_OP_PUSH,
     XVM_OP_POP,
     XVM_OP_XCHG,
     XVM_OP_INC,
     XVM_OP_DEC,
     XVM_OP_CMP,
+    XVM_OP_CMPB,
+    XVM_OP_CMPW,
     XVM_OP_TEST,
     XVM_OP_JMP,
     XVM_OP_JZ,
     XVM_OP_JNZ,
     XVM_OP_JA,
     XVM_OP_JB,
+    XVM_OP_JAE,
+    XVM_OP_JBE,
 } xvm_opcodes;
 
 

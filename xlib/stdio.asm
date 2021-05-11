@@ -17,15 +17,16 @@ puts:
 
     push    $bp
     mov     $bp, $sp
-    add     $sp, #0x04
-    mov     [$bp], #0x0a00
+    sub     $sp, #0x04
+    mov     [$bp-#0x04], #0x0a
     call    strlen
     mov     $r3, $r0
     mov     $r2, $r1
     mov     $r1, STDOUT
     call    write
-    mov     $r3, #0x02
+    mov     $r3, #0x01
     mov     $r2, $bp
+    sub     $r2, #0x04
     mov     $r1, STDOUT
     call    write
     mov     $sp, $bp

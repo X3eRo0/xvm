@@ -47,6 +47,10 @@ u32 xvm_bin_read_exe_header(xvm_bin* bin){
     fread(&bin->x_header->x_sections, 1, sizeof(u32), bin->x_file);
 
     // FIXME: add security checks
+    if (bin->x_header->x_magic != XVM_MAGIC){
+        fprintf(stderr, "[" KRED "-" KNRM "] Corrupted Bytecode\n");
+        exit(E_ERR);
+    }
 
     return E_OK;
 }
@@ -108,7 +112,10 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
         return E_ERR;
     }
 
-    xvm_bin_open_file(bin, filename);
+    if (xvm_bin_open_file(bin, filename) == E_ERR){
+        fprintf(stderr, "[" KRED "-" KNRM "] Cannot open \"%s\"\n", filename);
+        exit(-1);
+    }
     xvm_bin_read_exe_header(bin);
 
     struct raw_symtab_t {
@@ -130,13 +137,20 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
     u32     section_flag = 0;
     u32     section_indx = 0;
     u32     section_addr = 0;
+    u32     section_head = 0;
 
     for (u32 i = 0; i < bin->x_header->x_sections; i++) {
 
         // read section name
+        fread(&section_head, sizeof(u32), 1, bin->x_file);
+        if (section_head != 0xDEADBEEF){
+            fprintf(stderr, "[" KRED "-" KNRM "] Corrupted Section Headers\n");
+            exit(1);
+        }
+
         if (getdelim(&section_name, &read_size, '\x00', bin->x_file) <= 0) {
-            printf("xinfo: error cannot read section or corrupted file\n");
-            exit(-1);
+            fprintf(stderr, "[" KRED "-" KNRM "] Corrupted Section Headers\n");
+            exit(1);
         }
 
         fread(&section_size, sizeof(u32), 1, bin->x_file);
@@ -147,12 +161,18 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
         // if size is greater than the limit, adjust the size
         section_size = section_size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : section_size;
         section_indx = section_indx > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : section_indx;
+        section_indx = section_indx > section_size ? section_size : section_indx;
 
         section = add_section(bin->x_section, section_name, section_size, section_addr, section_flag);
 
+        if (section == NULL){
+            fprintf(stderr, "[" KRED "-" KNRM "] Cannot Load Section (\"%s\") : FATAL @ 0x%x\n", section_name, section_addr);
+            exit(-1);
+        }
+
         // after allocating the section read and fill the bytes
-        for (u32 j = 0; j < section_indx; j++){
-            append_byte(section, fgetc(bin->x_file));
+        for (u32 j = 0, byte = 0; j < section_indx && (byte = fgetc(bin->x_file)) != -1; j++){
+            append_byte(section, byte);
         }
     }
 
@@ -163,7 +183,16 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
 
     section = find_section_entry_by_name(bin->x_section, ".data");
 
+    if (section == NULL){
+        fprintf(stderr, "[" KRED "-" KNRM "] Corrupted section headers: \".data\" Not Found\n");
+        exit(-1);
+    }
+
     for (u32 j = 0; j < bin->x_header->x_dbgsym; j++){
+        if (raw_symtab[j].offset > section->v_size){
+            fprintf(stderr, "[" KRED "-" KNRM "] Corrupted section headers: symbol offset (0x%x) is out of bounds for \".data\" section\n", raw_symtab[j].offset);
+            exit(-1);
+        }
         add_symbol(bin->x_symtab, &section->m_buff[raw_symtab[j].offset], raw_symtab[j].address);
     }
 

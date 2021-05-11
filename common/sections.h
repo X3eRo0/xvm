@@ -7,6 +7,7 @@
 
 #include "const.h"
 
+
 #define WRITE_AS_BYTE 0
 #define WRITE_AS_WORD 1
 #define WRITE_AS_DWORD 2
@@ -32,12 +33,14 @@ typedef struct section_t {
     u32 n_sections;
 } section;
 
+
 typedef enum {
     XVM_INVALID_READ,
     XVM_INVALID_WRITE,
     XVM_INVALID_EXEC,
     XVM_INVALID_ADDR,
 } segfault_id;
+
 
 section_entry*      init_section_entry();
 u32                 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag);
