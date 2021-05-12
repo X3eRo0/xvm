@@ -206,6 +206,40 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             break;
         }
 
+        // lsi
+        case XVM_OP_LSU: {
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+            *arg1 = *arg1 << *arg2;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
+        // rsi
+        case XVM_OP_RSU: {
+            if (!arg1 || !arg2){
+                cpu_error(XVM_ILLEGAL_INST, "FATAL", cpu->regs.pc);
+            }
+            *arg1 = *arg1 >> *arg2;
+
+            if (*arg1 == 0){
+                set_ZF(cpu, 1);
+                set_CF(cpu, 0);
+            } else {
+                set_ZF(cpu, 0);
+                set_CF(cpu, 0);
+            }
+            break;
+        }
+
         // xor
         case XVM_OP_XOR: {
 

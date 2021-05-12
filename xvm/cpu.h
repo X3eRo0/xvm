@@ -22,6 +22,8 @@ typedef enum xvm_opcd_t {
     XVM_OP_RET,
     XVM_OP_CALL,
     XVM_OP_SYSC,
+    XVM_OP_LSU,
+    XVM_OP_RSU,
     XVM_OP_ADD,
     XVM_OP_ADDB,
     XVM_OP_ADDW,

@@ -14,9 +14,9 @@ int main(int argc, char* argv[]) {
 	xvm_bin * bin = init_xvm_bin();
 
     xvm_bin_load_file(bin, argv[1]);
-    show_exe_info(bin->x_header);
-    show_section_info(bin->x_section);
-    show_symtab_info(bin->x_symtab);
+    // show_exe_info(bin->x_header);
+    // show_section_info(bin->x_section);
+    // show_symtab_info(bin->x_symtab);
 
     add_section(bin->x_section, "stack", XVM_STACK_SIZE, XVM_DFLT_SP & 0xfffff000, PERM_READ | PERM_WRITE);
 
