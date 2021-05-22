@@ -117,17 +117,20 @@ u32 xasm_resolve_register_id(char* reg_s){
 u32 xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size){
     // check if argument exists
 
-    char * end = strchr(args, '\x00') - 1;
-    while (is_white_space(end)){
-        end--;
-    }
-    *++end = '\0';
-
     if (args[0] == '\x00'){
         if (!calc_size){
             arg->arg_type = ARG_NARG;
         }
         return 0; // size of arguments are 0
+    }
+
+    char * end = strchr(args, '\x00') - 1;
+    if (is_white_space(end)){
+        while (is_white_space(end) && args > end){
+            end--;
+        }
+
+        *++end = '\0';
     }
 
     // check if argument is register?
@@ -284,7 +287,18 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         temp = line;
         skip_to_whitespace(line);
         *line++ = '\x00';
-        *current_section_entry = find_section_entry_by_name(xasm->sections, temp);
+        *current_section_entry = NULL;
+
+        // find section
+        section_entry* tent = xasm->sections->sections;
+
+        while (tent != NULL){
+            if (tent->m_name != NULL && !strncmp(tent->m_name, temp, strlen(temp))){
+                *current_section_entry = tent;
+            }
+            tent = tent->next;
+        }
+
         clear_whitespaces(line);
 
         if (*line == '\x00'){
@@ -565,12 +579,12 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
 
             clear_whitespaces(temp);
 
-            asciz = strstr(temp, ".asciz");     // find asciz
+            asciz = strstr(temp, ".asciz");         // find asciz
             if (asciz == NULL) {
-                comment = strchrnul(temp, ';');     // find comment
-                label = strchrnul(temp, ':');       // find label
-                define = strchrnul(temp, '#');      // find defines
-                newline = strchrnul(temp, '\n');    // find line end
+                comment = strchrnul(temp, ';');         // find comment
+                label = strchrnul(temp, ':');           // find label
+                define = strstr(temp, "#define");   // find defines
+                newline = strchrnul(temp, '\n');        // find line end
 
                 // remove any comment or label symbol
                 comment[0] = '\x00';
@@ -589,7 +603,6 @@ u32 xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **input
                 clear_whitespaces(define);
                 temp = define;
                 skip_to_whitespace(define);
-                *define++ = '\x00';
                 clear_whitespaces(define);
                 add_symbol(xasm->define, temp, xasm_resolve_number(define));
                 continue;

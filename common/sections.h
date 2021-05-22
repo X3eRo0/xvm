@@ -12,7 +12,7 @@
 #define WRITE_AS_WORD 1
 #define WRITE_AS_DWORD 2
 
-#define MAX_ALLOC_SIZE 0x4000
+#define MAX_ALLOC_SIZE 0x10000
 #define MAX_NAME_SIZE  0x20
 #define section_end(sec) (((sec)->v_addr) + ((sec)->v_size))
 
@@ -45,7 +45,9 @@ typedef enum {
 section_entry*      init_section_entry();
 u32                 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag);
 
+u32                 write_raw_section_to_file(section* sec, FILE* file);
 u32                 write_section_entry_to_file(section_entry* sec_entry, FILE* file);
+u32                 write_raw_section_entry_to_file(section_entry* sec_entry, FILE* file);
 u32                 append_byte(section_entry* sec_entry, u8 byte);
 u32                 append_word(section_entry* sec_entry, u16 word);
 u32                 append_dword(section_entry* sec_entry, u32 dword);

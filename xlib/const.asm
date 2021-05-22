@@ -12,6 +12,16 @@
 #define SYS_MAP     #0x02
 #define SYS_UNMAP   #0x03
 #define SYS_EXEC    #0x04
+#define SYS_OPEN    #0x05
+#define SYS_CLOSE   #0x06
+#define SYS_BIND    #0x07
+#define SYS_ACCEPT  #0x08
+#define SYS_LISTEN  #0x09
+#define SYS_RECV    #0x0A
+#define SYS_SEND    #0x0B
+#define SYS_SOCKET  #0x0C
+#define SYS_CONNECT #0x0D
+#define SYS_DUP2    #0x0E
 
 ; perms
 #define PERM_READ   #0x1

@@ -89,8 +89,16 @@ u32 write_section_entry_to_file(section_entry* sec_entry, FILE* file){
     return E_OK;
 }
 
+u32 write_raw_section_entry_to_file(section_entry* sec_entry, FILE* file){
+    fwrite(sec_entry->m_buff, sizeof(u8), sec_entry->m_ofst, file);
+    return E_OK;
+}
+
 u32 append_byte(section_entry* sec_entry, u8 byte){
     // write byte
+    if (sec_entry->m_ofst >= sec_entry->v_size){
+        segfault(XVM_INVALID_ADDR, sec_entry, sec_entry->v_addr + sec_entry->m_ofst);
+    }
     *((u8*)&sec_entry->m_buff[sec_entry->m_ofst]) = byte;
     sec_entry->m_ofst += sizeof(u8);
     return sizeof(u8);
@@ -98,6 +106,9 @@ u32 append_byte(section_entry* sec_entry, u8 byte){
 
 u32 append_word(section_entry* sec_entry, u16 word){
     // write word
+    if (sec_entry->m_ofst >= sec_entry->v_size){
+        segfault(XVM_INVALID_ADDR, sec_entry, sec_entry->v_addr + sec_entry->m_ofst);
+    }
     *((u16*)&sec_entry->m_buff[sec_entry->m_ofst]) = word;
     sec_entry->m_ofst += sizeof(u16);
     return sizeof(u16);
@@ -105,6 +116,10 @@ u32 append_word(section_entry* sec_entry, u16 word){
 
 u32 append_dword(section_entry* sec_entry, u32 dword){
     // write dword
+    if (sec_entry->m_ofst >= sec_entry->v_size){
+        segfault(XVM_INVALID_ADDR, sec_entry, sec_entry->v_addr + sec_entry->m_ofst);
+    }
+
     *((u32*)&sec_entry->m_buff[sec_entry->m_ofst]) = dword;
     sec_entry->m_ofst += sizeof(u32);
     return sizeof(u32);
@@ -393,6 +408,16 @@ u32 write_section_to_file(section* sec, FILE* file){
     return E_OK;
 }
 
+u32 write_raw_section_to_file(section* sec, FILE* file){
+    section_entry* temp = sec->sections;
+    while(temp != NULL){
+        write_raw_section_entry_to_file(temp, file);
+        temp = temp->next;
+    }
+
+    return E_OK;
+}
+
 u32 write_buffer_to_section_by_name(section* sec, char* name, u32 buffer, u32 write_as_flag){
 
     if (sec == NULL) {
@@ -437,14 +462,7 @@ u32 write_buffer_to_section_by_addr(section* sec, u32 addr, u32 buffer, u32 writ
         return E_ERR;
     }
 
-    section_entry* temp = sec->sections;
-
-    while (temp != NULL){
-        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size){
-            break;
-        }
-        temp = temp->next;
-    }
+    section_entry* temp = find_section_entry_by_addr(sec, addr);
 
     if (temp == NULL){
         return E_ERR;

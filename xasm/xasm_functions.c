@@ -133,6 +133,7 @@ u32 xasm_escape_string(char* unescaped) {
             // smaller than the unescaped string, so we
             // can use the same memory for escaping.
             switch(unescaped[1]){
+                case '0' : writeptr[0] = '\0'; break;
                 case 'n' : writeptr[0] = '\n'; break;
                 case 'r' : writeptr[0] = '\r'; break;
                 case 't' : writeptr[0] = '\t'; break;

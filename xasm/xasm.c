@@ -8,9 +8,11 @@ static u32 ifiles = 0;
 static FILE** inputf = NULL;
 static char*  output = "./a.xvm";
 static u32 dbgsyms = 0;
+static u32 scode_m = 0;
 
 #define USAGE()             puts("Usage: ./xasm -i <input files> -o <output file>");\
-                            puts("Author: X3eRo0");\
+                            puts("Author: X3eRo0");                                 \
+                            puts("\t-s -- \tShellcode mode");                       \
                             puts("\t-i -- \tInput Files");\
                             puts("\t-o -- \tOutput File");\
                             puts("\t-h -- \tHelp");\
@@ -45,21 +47,35 @@ int main(int argc, char* argv[]){
         if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'd'){
             dbgsyms = 1;
         }
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 's'){
+            scode_m = 1;
+        }
         if ((argv[i] != NULL) && ((argv[i][0] == '-' && argv[i][1] == 'h') || (!strncmp(argv[i], "--help", 6)))){
             USAGE();
         }
     }
 
-
-    // add default .text and .data sections
+    // xasm structure initialization
     xasm->sections = init_section();
-    section_entry* text = add_section(xasm->sections, ".text", 0x1000, XVM_DFLT_EP, PERM_READ | PERM_EXEC);
-    section_entry* data = add_section(xasm->sections, ".data", 0x1000, XVM_DFLT_DP, PERM_READ | PERM_WRITE);
+
 
     // open the input and output files
     // for assembling
 
     xasm_open_ofile(xasm, output);
+
+    // if shellcode mode
+
+    if (scode_m){
+        xasm_assemble(xasm, NULL, inputf, ifiles);
+        write_raw_section_to_file(xasm->sections, xasm->ofile);
+        goto xasm_ret;
+    }
+
+
+    // add default .text and .data sections
+    section_entry* text = add_section(xasm->sections, ".text", 0x10000, XVM_DFLT_EP, PERM_READ | PERM_EXEC);
+    section_entry* data = add_section(xasm->sections, ".data", 0x10000, XVM_DFLT_DP, PERM_READ | PERM_WRITE);
 
     // assemble loop
     xasm_assemble(xasm, text, inputf, ifiles);
@@ -85,6 +101,7 @@ int main(int argc, char* argv[]){
     // write section data to files
     write_section_to_file(xasm->sections, xasm->ofile);
 
+    xasm_ret:
     // destroy assembler structure
     fini_xasm(xasm); xasm = NULL;
 

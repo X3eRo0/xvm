@@ -52,99 +52,192 @@ strncmp: ; strncmp(unsigned char *str1, unsigned char *str2, u32 len)
         jmp     .strncmp_L1
 
 
-int2str:
-    ; convert int to str
-    ; rdi --> number
-    ; rsi --> buffer
+reverse:                                ; @reverse
+; %bb.0:
     push    $bp
-    mov     $bp, $sp
-    mov     $r8, $r1
-    mov     $rc, $r1
-    mov     $r9, $r2
-    .int2str_L1:
-        
-        mov     $rb, $r8
-        div     $rb, #0x0a
-        mov     $rb, $r1
-        push    $rb
-        div     $r8, #0x0a
-        test    $r8, $r8
-        jnz     .int2str_L1
-    
-    mov     $r8, $rc
-    xor     $ra, $ra
-
-    .int2str_L2:
-        pop     $ra
-        add     $ra, #0x30
-        movb    [$r9], $ra
-        inc     $r9
-        div     $r8, #0x0a
-        test    $r8, $r8
-        jnz     .int2str_L2
-
-    inc     $r9
-    movb    [$r9], #0x00
-
-    .int2str_L3:
-        mov     $r0, $r2
-        mov     $sp, $bp
-        pop     $bp
-        ret
-
-
-str2int:
-    push  $bp
-    mov   $bp, $sp
-    call  strlen
-    mov   $r8, $r0
-    mov   $r9, $r8
-    xor   $rc, $rc
-    xor   $r4, $r4
-    mov   $r9, $r8
-
-    .str2int_L1:
-
-        dec   $r9
-        cmp   $rc, $r8             ; compare if $rc == length of string
-        jz    .str2int_L1_end        ; if equal end the loop
-        movb  $r6, [$r1]
-        inc   $r1
-        inc   $rc
-        cmp   $r6, #0x30          ; check if the value is less than #0x30
-        jb    .str2int_L3     ; jump to .str2int_L3
-        cmp   $r6, #0x39          ; check if the value is larger than #0x39
-        ja    .str2int_L3     ; jump to .str2int_L3
-        sub   $r6, #0x30          ; if everything is good then subtract #0x30
-        xor   $rd, $rd
-        mov   $r5, #0x1
-
-        .str2int_L2:
-          cmp   $rd, $r9
-          jz    .str2int_L2_end
-          mul   $r5, #0xa
-          inc   $rd
-          jmp   .str2int_L2
-
-        .str2int_L2_end:
-
-        mul     $r5, $r6
-        add     $r4, $r5
-        jmp .str2int_L1
-
-
-.str2int_L1_end:
-    mov $sp, $bp
-    pop $bp
-    mov $r0, $r4
+    mov    $bp, $sp
+    mov    [$bp - #0x10], $r1
+    mov    [$bp - #0x18], $r2
+    mov    [$bp - #0x1c], $r5
+    mov    [$bp - #0x20], #0x0
+reverse_bb0_1:                                ; =>This Inner Loop Header: Depth=1
+    mov    $r0, [$bp - #0x20]
+    cmp    $r0, [$bp - #0x1c]
+    jae    reverse_bb0_4
+; %bb.2:                                ;   in Loop: Header=BB0_1 Depth=1
+    mov    $r0, [$bp - #0x10]
+    mov    $r4, [$bp - #0x20]
+    mov    $r5, $r4
+    add     $r0, $r5
+    movb    $r2, [$r0]
+    mov    $r0, [$bp - #0x18]
+    mov    $r4, [$bp - #0x1c]
+    sub    $r4, [$bp - #0x20]
+    sub    $r4, #0x1
+    mov    $r4, $r4
+    mov    $r5, $r4
+    add     $r0, $r5
+    movb    [$r0], $r2
+; %bb.3:                                ;   in Loop: Header=BB0_1 Depth=1
+    mov    $r0, [$bp - #0x20]
+    add    $r0, #0x1
+    mov    [$bp - #0x20], $r0
+    jmp    reverse_bb0_1
+reverse_bb0_4:
+    mov    $r0, [$bp - #0x4]
+    pop    $bp
+    ret
+                                        ; -- End function
+str2int:                                ; @str2int
+; %bb.0:
+    push    $bp
+    mov    $bp, $sp
+    sub    $sp, #0x20
+    mov    [$bp - #0x8], $r1
+    mov    $r1, [$bp - #0x8]
+    call    strlen
+                                        ; kill: def $$r0 killed $$r0 killed $$r0
+    mov    [$bp - #0xc], $r0
+    mov    [$bp - #0x14], #0x0
+    mov    [$bp - #0x18], #0x1
+    mov    [$bp - #0x10], #0x0
+str2int_bb1_1:                                ; =>This Inner Loop Header: Depth=1
+    mov    $r0, [$bp - #0x10]
+    cmp    $r0, [$bp - #0xc]
+    jae    str2int_bb1_4
+; %bb.2:                                ;   in Loop: Header=BB1_1 Depth=1
+    mov    $r0, [$bp - #0x14]
+    mov    $r4, [$bp - #0x8]
+    mov    $r5, [$bp - #0xc]
+    mov    $r2, [$bp - #0x10]
+    add    $r2, #0x1
+    sub    $r5, $r2
+    mov    $r5, $r5
+    mov    $r1, $r5
+    add     $r4, $r1
+    movb    $r5, [$r4]
+    sub    $r5, #0x30
+    mul    $r5, [$bp - #0x18]
+    add    $r0, $r5
+    mov    [$bp - #0x14], $r0
+    mul   [$bp - 24], #0xa
+    mov $r0,   [$bp - 24]
+    mov    [$bp - #0x18], $r0
+; %bb.3:                                ;   in Loop: Header=BB1_1 Depth=1
+    mov    $r0, [$bp - #0x10]
+    add    $r0, #0x1
+    mov    [$bp - #0x10], $r0
+    jmp    str2int_bb1_1
+str2int_bb1_4:
+    mov    $r0, [$bp - #0x14]
+    add    $sp, #0x20
+    pop    $bp
+    ret
+                                        ; -- End function
+int2str:                                ; @int2str
+; %bb.0:
+    push    $bp
+    mov    $bp, $sp
+    sub    $sp, #0x30
+    mov    [$bp - #0x8], $r1
+    mov    [$bp - #0xc], $r2
+    mov    [$bp - #0x18], #0x0
+    mov    [$bp - #0x1c], #0x0
+    test   $r2, $r2
+    jz     int2str_ret_0
+    mov    $r0, [$bp - #0xc]
+    mov    [$bp - #0x1c], $r0
+int2str_bb2_1:                                ; =>This Inner Loop Header: Depth=1
+    cmp    [$bp - #0x1c], #0x0
+    jz    int2str_bb2_3
+; %bb.2:                                ;   in Loop: Header=BB2_1 Depth=1
+    mov    $r0, [$bp - #0x18]
+    add    $r0, #0x1
+    mov    [$bp - #0x18], $r0
+    mov    $r0, [$bp - #0x1c]
+    xor    $r5, $r5
+    mov    $r4, #0xa
+    div    $r0, $r4
+    mov    [$bp - #0x1c], $r0
+    jmp    int2str_bb2_1
+int2str_bb2_3:
+    mov    [$bp - #0x10], #0x0
+int2str_bb2_4:                                ; =>This Inner Loop Header: Depth=1
+    mov    $r0, [$bp - #0x10]
+    cmp    $r0, [$bp - #0x18]
+    jae    int2str_bb2_7
+; %bb.5:                                ;   in Loop: Header=BB2_4 Depth=1
+    mov    $r0, [$bp - #0xc]
+    xor    $r5, $r5
+    mov    $r4, #0xa
+    div    $r0, $r4
+    mov    [$bp - #0x14], $r5
+    mov    $r5, [$bp - #0xc]
+    mov    $r0, $r5
+    xor    $r5, $r5
+    div    $r0, $r4
+    mov    [$bp - #0xc], $r0
+    mov    $r0, [$bp - #0x14]
+    add    $r0, #0x30
+                                        ; kill: def $al killed $al killed $$r0
+    mov    $r2, [$bp - #0x8]
+    mov    $r4, [$bp - #0x18]
+    mov    $r1, [$bp - #0x10]
+    add    $r1, #0x1
+    sub    $r4, $r1
+    mov    $r4, $r4
+    mov    $r8, $r4
+    add     $r2, $r8
+    movb    [$r2], $r0
+; %bb.6:                                ;   in Loop: Header=BB2_4 Depth=1
+    mov    $r0, [$bp - #0x10]
+    add    $r0, #0x1
+    mov    [$bp - #0x10], $r0
+    jmp    int2str_bb2_4
+int2str_bb2_7:
+    mov    $r0, [$bp - #0x8]
+    mov    $r4, [$bp - #0x18]
+    mov    $r5, $r4
+    add     $r0, $r5
+    movb    [$r0], #0x0
+    mov    $sp, $bp
+    pop    $bp
     ret
 
-.str2int_L3:
-    mov $r1, str2int_ERR
-    call puts
-    hlt
+int2str_ret_0:
+    movb [$r1], #0x30
+    movb [$r1+#1], #0x00
+    mov    $sp, $bp
+    pop    $bp
+    ret
 
-.section .data
+memset:                                ; @memset
+; %bb.0:
+    mov $r6, $r1
+    xor $r7, $r7
+memset_loop:
+    cmp $r7, $r5
+    jae .MMST_1
+    movb [$r6], $r2
+    inc $r7
+    inc $r6
+    jmp memset_loop
+.MMST_1:
+    mov $r0, $r1
+    ret
 
-str2int_ERR:
-    .asciz "abort [xvm-lib][str2int] Input is not a decimal number"
+memcpy:                                ; @memcpy
+; %bb.0:
+    mov $r6, $r1
+    xor $r7, $r7
+memcpy_loop:
+    cmp $r7, $r5
+    jae .MMST_1
+    movb [$r6], [$r2]
+    inc $r2
+    inc $r7
+    inc $r6
+    jmp memcpy_loop
+.MMST_1:
+    mov $r0, $r1
+    ret

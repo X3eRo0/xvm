@@ -3,6 +3,12 @@
 //
 
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include "../common/const.h"
 #include "../common/loader.h"
 
@@ -72,6 +78,17 @@ typedef enum xvm_sysc_t {
     XVM_SYSC_MAP,
     XVM_SYSC_UNMAP,
     XVM_SYSC_EXEC,
+    XVM_SYSC_OPEN,
+    XVM_SYSC_CLOSE,
+    XVM_SYSC_BIND,
+    XVM_SYSC_ACCEPT,
+    XVM_SYSC_LISTEN,
+    XVM_SYSC_RECV,
+    XVM_SYSC_SEND,
+    XVM_SYSC_SOCKET,
+    XVM_SYSC_CONNECT,
+    XVM_SYSC_DUP2,
+
 } xvm_syscalls;
 
 typedef struct xvm_reg_t {

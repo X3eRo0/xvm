@@ -6,7 +6,7 @@ print:
     mov     $bp, $sp
     call    strlen
     mov     $r2, $r1
-    mov     $r3, $r0
+    mov     $r5, $r0
     mov     $r1, STDOUT
     call    write
     mov     $sp, $bp
@@ -20,11 +20,11 @@ puts:
     sub     $sp, #0x04
     mov     [$bp-#0x04], #0x0a
     call    strlen
-    mov     $r3, $r0
+    mov     $r5, $r0
     mov     $r2, $r1
     mov     $r1, STDOUT
     call    write
-    mov     $r3, #0x01
+    mov     $r5, #0x01
     mov     $r2, $bp
     sub     $r2, #0x04
     mov     $r1, STDOUT
@@ -57,7 +57,7 @@ write:
 gets:
     push    $bp
     mov     $bp, $sp
-    mov     $r3, $r2
+    mov     $r5, $r2
     mov     $r2, $r1
     mov     $r1, STDIN
     mov     $r0, SYS_READ
