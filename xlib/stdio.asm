@@ -65,12 +65,3 @@ gets:
     mov     $sp, $bp
     pop     $bp
     ret
-
-system:
-    push    $bp
-    mov     $bp, $sp
-    mov     $r0, SYS_EXEC
-    syscall
-    mov     $sp, $bp
-    pop     $bp
-    ret
