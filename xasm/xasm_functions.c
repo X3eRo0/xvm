@@ -142,6 +142,7 @@ u32 xasm_escape_string(char* unescaped) {
                 case 'f' : writeptr[0] = '\f'; break;
                 case 'v' : writeptr[0] = '\v'; break;
                 case '\\': writeptr[0] = '\\'; break;
+                case '"' : writeptr[0] = '"' ; break;
                 case 'x' : { // for escaping hex digits
                     u32 num = 0;
 
@@ -248,12 +249,13 @@ u32 xasm_error(u32 error_id, u32 line, char* func, char* msg, ...){
 
     char* error_msg = NULL;
     va_list valist;
-
+    printf("["KRED "!" KNRM "] ");
     va_start(valist, msg);
     vprintf(msg, valist);
     printf("\t");
 
     switch (error_id) {
+        case E_INVALID_INPUTFILE: error_msg = "Cannot Open file"; break;
         case E_INVALID_IMMEDIATE: error_msg = "Invalid Immediate value"; break;
         case E_INVALID_SYNTAX: error_msg = "Invalid Syntax"; break;
         case E_INVALID_OPCODE: error_msg = "Unknown Opcode"; break;

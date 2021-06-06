@@ -313,6 +313,7 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
         // at the lowest address possible
 
         section_entry* new = init_section_entry();
+        sec->n_sections++;
         set_section_entry(new, name, size, addr, flag);
         new->next = sec->sections;
         sec->sections = new;
@@ -385,15 +386,15 @@ section_entry* find_section_entry_by_addr(section* sec, u32 addr){
 
 u32 show_section_info(section* sec){
 
+    // FIXME : COMMENT FOR RELEASE
     printf("[" KGRN "+" KNRM "] Dumping Section Info\n");
     printf("Section Name      Size    Flags    Size on Disk      v-address\n");
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
+    while (temp != NULL) {
         show_section_entry_info(temp);
         temp = temp->next;
     }
-
     return E_OK;
 }
 

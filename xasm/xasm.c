@@ -35,6 +35,9 @@ int main(int argc, char* argv[]){
                 ifiles++;
                 inputf = realloc(inputf, sizeof(char *) * ifiles);
                 inputf[ifiles - 1] = fopen(argv[i++], "r");
+                if (inputf[ifiles - 1] == NULL){
+                    xasm_error(E_INVALID_INPUTFILE, 0, NULL, "Cannot Open File : %s", argv[i - 1]);
+                }
             }
 
             if (ifiles == 0){
@@ -68,6 +71,7 @@ int main(int argc, char* argv[]){
 
     if (scode_m){
         xasm_assemble(xasm, NULL, inputf, ifiles);
+        show_symtab_info(xasm->symtab);
         write_raw_section_to_file(xasm->sections, xasm->ofile);
         goto xasm_ret;
     }

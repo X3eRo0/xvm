@@ -265,7 +265,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8*)arg1 ^= *(u8*)arg2;
-            if (*arg1 == 0){
+            if (*(u8*)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -282,7 +282,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16*)arg1 ^= *(u16*)arg2;
-            if (*arg1 == 0){
+            if (*(u16*)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -317,7 +317,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8 *)arg1 &= *(u8 *)arg2;
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -334,7 +334,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16 *)arg1 &= *(u16 *)arg2;
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -369,7 +369,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8 *)arg1 |= *(u8 *)arg2;
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -386,7 +386,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16 *)arg1 |= *(u16 *)arg2;
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -421,7 +421,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8 *)arg1 = ~*(u8 *)arg1;
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -438,7 +438,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16 *)arg1 = ~*(u16 *)arg1;
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -473,7 +473,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8 *)arg1 += *(u8 *)arg2;
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -490,7 +490,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16 *)arg1 += *(u16 *)arg2;
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -525,7 +525,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8 *)arg1 -= *(u8 *)arg2;
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -542,7 +542,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16 *)arg1 -= *(u16 *)arg2;
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -577,7 +577,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u8 *)arg1 *= *(u8 *)arg2;
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -594,7 +594,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             }
 
             *(u16 *)arg1 *= *(u16 *)arg2;
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -643,7 +643,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             *(u8 *)arg1 /= *(u8 *)arg2;
             cpu->regs.r5 = modulo;
 
-            if (*arg1 == 0){
+            if (*(u8 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {
@@ -667,7 +667,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin){
             *(u16 *)arg1 /= *(u16 *)arg2;
             cpu->regs.r5 = modulo;
 
-            if (*arg1 == 0){
+            if (*(u16 *)arg1 == 0){
                 set_ZF(cpu, 1);
                 set_CF(cpu, 0);
             } else {

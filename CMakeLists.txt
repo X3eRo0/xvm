@@ -48,6 +48,7 @@ add_executable(xinfo
 add_executable(xdis
     xasm/xdis.c
     xasm/disasm.c
+    xasm/xasm_functions.c
     common/loader.c
     common/loader.h
     common/symbols.c

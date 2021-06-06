@@ -216,6 +216,7 @@ char * resolve_symbol_name(symtab* x_symtab, u32 symbol_addr) {
 
 u32 show_symtab_info(symtab* x_symtab) {
     // print the symbol table
+    // FIXME : COMMENT FOR RELEASE
 
     printf("\n[" KGRN "+" KNRM "] Dumping SymTab\n");
     printf("  Address      Symbol\n");

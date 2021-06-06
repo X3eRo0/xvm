@@ -4,7 +4,7 @@
 
 #include "xasm.h"
 
-const char* mnemonics[XVM_NINSTR] = {
+const char* mnemonics[] = {
         [XVM_OP_MOV]  = "mov",
         [XVM_OP_MOVB] = "movb",
         [XVM_OP_MOVW] = "movw",
@@ -80,14 +80,21 @@ const char* registers[XVM_NREGS] = {
 char* xasm_resolve_mnemonic(u32 opcode){
     // resolve opcode's mnemonic
 
-    return opcode < XVM_NINSTR ? (char*)mnemonics[opcode] : NULL;
+    return opcode < (sizeof(mnemonics)/sizeof(char *)) ? (char*)mnemonics[opcode] : NULL;
 }
 
 u32 xasm_resolve_opcode(char* args){
     // resolve mnemonic's opcode
 
-    for (u32 i = 0; i < XVM_NINSTR; i++){
-        if (!strncmp(xasm_resolve_mnemonic(i), args, strlen(args))){
+    char * mnemonic = NULL;
+
+    for (u32 i = 0; i < sizeof(mnemonics)/sizeof(char *); i++){
+        mnemonic = xasm_resolve_mnemonic(i);
+        if (mnemonic == NULL){
+            continue;
+        }
+
+        if (!strncmp(mnemonic, args, strlen(args))){
             return i;
         }
     }
@@ -293,7 +300,7 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         section_entry* tent = xasm->sections->sections;
 
         while (tent != NULL){
-            if (tent->m_name != NULL && !strncmp(tent->m_name, temp, strlen(temp))){
+            if (tent->m_name != NULL && !strncmp(tent->m_name, temp, strlen(tent->m_name))){
                 *current_section_entry = tent;
             }
             tent = tent->next;
@@ -374,14 +381,20 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         char* token = NULL;
         while ((token = strtok_r(rest, ",", &rest))){
             clear_whitespaces(token);
+            size += sizeof(u8);
             // if token is an u8 immediate
             if (token[0] == '#'){
-                size += sizeof(u8);
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u8)imm, WRITE_AS_BYTE);
+                    write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_BYTE);
                 }
+            } else if (!calc_size) {
+                u32 imm = resolve_symbol_addr(xasm->symtab, token);
+                if (imm == E_ERR){
+                    xasm_error(E_INVALID_SYNTAX, 0, NULL, "\"%s\" Not Defined", token);
+                }
+                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_BYTE);
             }
         }
 
@@ -402,14 +415,20 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         char* token = NULL;
         while ((token = strtok_r(rest, ",", &rest))){
             clear_whitespaces(token);
+            size += sizeof(u16);
             // if token is an u16 immediate
             if (token[0] == '#'){
-                size += sizeof(u16);
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
-                    write_buffer_to_section_by_name(xasm->sections, (*current_section_entry)->m_name, (u16)imm, WRITE_AS_WORD);
+                    write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_WORD);
                 }
+            } else if (!calc_size) {
+                u32 imm = resolve_symbol_addr(xasm->symtab, token);
+                if (imm == E_ERR){
+                    xasm_error(E_INVALID_SYNTAX, 0, NULL, "\"%s\" Not Defined", token);
+                }
+                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_WORD);
             }
         }
 
@@ -428,14 +447,20 @@ u32 xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_e
         char* token = NULL;
         while ((token = strtok_r(rest, ",", &rest))){
             clear_whitespaces(token);
+            size += sizeof(u32);
             // if token is an u32 immediate
             if (token[0] == '#'){
-                size += sizeof(u32);
 
                 if (!calc_size){
                     u32 imm = xasm_resolve_number(token);
                     write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_DWORD);
                 }
+            } else if (!calc_size) {
+                u32 imm = resolve_symbol_addr(xasm->symtab, token);
+                if (imm == E_ERR){
+                    xasm_error(E_INVALID_SYNTAX, 0, NULL, "\"%s\" Not Defined", token);
+                }
+                write_buffer_to_section_by_addr(xasm->sections, (*current_section_entry)->v_addr, (u32)imm, WRITE_AS_DWORD);
             }
         }
 

@@ -71,6 +71,7 @@ u32 show_exe_info(exe_header* header){
     if (!header) {
         return E_ERR;
     }
+    // FIXME : COMMENT FOR RELEASE
 
     puts(KBLU "\n[-----------------" KNRM "xvm" KBLU "-----------------]" KNRM);
     printf("[\033[0;32m+\033[0m] x_magic\t\t: %.8X\n", header->x_magic);
@@ -83,6 +84,7 @@ u32 show_exe_info(exe_header* header){
         printf("[\033[0;32m+\033[0m] x_dbgsym\t\t: False\n");
     }
     puts(KBLU "[-------------------------------------]\n" KNRM);
+
     return E_OK;
 
 }

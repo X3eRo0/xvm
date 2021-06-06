@@ -75,6 +75,7 @@ void cpu_error(u32 error, char *msg, u32 addr) {
 
 // FIXME: REMOVE IN RELEASE
 
+/*
 void show_registers(xvm_cpu* cpu, xvm_bin * bin){
     printf("\n\nPC -- 0x%.8X [ZF : %s] [CF : %s]\n", cpu->regs.pc, (get_ZF(cpu)==1? "True" : "False"), (get_CF(cpu)==1? "True" : "False"));
     printf("$r0 : 0x%.8X\n$r1 : 0x%.8X\n$r2 : 0x%.8X\n$r3 : 0x%.8X\n", cpu->regs.r0, cpu->regs.r1, cpu->regs.r2, cpu->regs.r3);
@@ -82,10 +83,11 @@ void show_registers(xvm_cpu* cpu, xvm_bin * bin){
     printf("$r8 : 0x%.8X\n$r9 : 0x%.8X\n$ra : 0x%.8X\n$rb : 0x%.8X\n", cpu->regs.r8, cpu->regs.r9, cpu->regs.ra, cpu->regs.rb);
     printf("$rc : 0x%.8X\n$pc : 0x%.8X\n$bp : 0x%.8X\n$sp : 0x%.8X\n", cpu->regs.rc, cpu->regs.pc, cpu->regs.bp, cpu->regs.sp);
 
-    for (u32 i = XVM_DFLT_SP; i >= cpu->regs.sp; i -= 4){
-        printf("0x%.8X : 0x%.8X\n", i, read_dword(bin->x_section, i, PERM_READ));
-    }
+    //for (u32 i = XVM_DFLT_SP; i >= cpu->regs.sp; i -= 4){
+    //    printf("0x%.8X : 0x%.8X\n", i, read_dword(bin->x_section, i, PERM_READ));
+    //}
 }
+*/
 
 void fde_cpu(xvm_cpu *cpu, xvm_bin *bin){
     u32 instr_size = 0;

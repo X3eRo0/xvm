@@ -14,7 +14,6 @@
 #include "../common/loader.h"
 
 
-#define XVM_NINSTR  50
 #define XVM_NREGS   16
 
 
@@ -111,7 +110,7 @@ typedef enum {
 } xasm_argument_t;
 
 typedef enum {
-
+    E_INVALID_INPUTFILE,
     E_INVALID_IMMEDIATE,
     E_INVALID_SYNTAX,
     E_INVALID_OPCODE,
@@ -184,7 +183,7 @@ u32     xasm_resolve_register_id(char* reg_s);
 u32     xasm_resolve_opcode(char* mnemonic);
 u32     xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size);
 char*   xasm_resolve_mnemonic(u32 opcode);
-void    xasm_disassemble(xvm_bin* bin, u32 ninstr);
+void    xasm_disassemble(xvm_bin* bin, section_entry* sec, u32 ninstr);
 u32     xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **inputf, u32 ifiles);
 u32     xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_entry, bool calc_size);
 u32     xasm_open_ifile(xasm* xasm, char* file);

@@ -5,7 +5,7 @@
 #include "xasm.h"
 
 
-const char* mnemonics[XVM_NINSTR] = {
+const char* mnemonics[] = {
         [XVM_OP_MOV]  = "mov",
         [XVM_OP_MOVB] = "movb",
         [XVM_OP_MOVW] = "movw",
@@ -78,14 +78,17 @@ const char* registers[XVM_NREGS] = {
 };
 
 
-void xasm_disassemble(xvm_bin* bin, u32 ninstr){
+void xasm_disassemble(xvm_bin* bin, section_entry* sec, u32 ninstr){
 
-    section_entry* text = find_section_entry_by_name(bin->x_section, ".text");
-    printf("\n[" KGRN "+" KNRM "] Disassembling .text\n");
-    printf("[" KGRN "+" KNRM "] Raw Size : %d BYTES\n", text->m_ofst);
-    printf("[" KGRN "+" KNRM "] Address  : 0x%X\n", text->v_addr);
-    char* bytecode = text->m_buff;    // bytecode array
-    u32 pc = 0;                       // pc
+    if (sec->m_name == NULL){
+        printf("\n[" KGRN "+" KNRM "] Disassembling <Unnamed Section>\n");
+    } else {
+        printf("\n[" KGRN "+" KNRM "] Disassembling %s\n", sec->m_name);
+    }
+    printf("[" KGRN "+" KNRM "] Raw Size : %d BYTES\n", sec->m_ofst);
+    printf("[" KGRN "+" KNRM "] Address  : 0x%X\n", sec->v_addr);
+    char* bytecode = sec->m_buff;    // bytecode array
+    u32 pc = 0;                      // pc
 
     u8 opcd = 0;
     u8 mode = 0;
@@ -97,9 +100,9 @@ void xasm_disassemble(xvm_bin* bin, u32 ninstr){
     if (ninstr == 0){
         ninstr = -1;
     }
-    for (u32 i = 0; (pc < text->m_ofst) && i < ninstr; i++){
+    for (u32 i = 0; (pc < sec->m_ofst) && i < ninstr; i++){
 
-        imm = text->v_addr + pc;
+        imm = sec->v_addr + pc;
         temp = resolve_symbol_name(bin->x_symtab, imm);
 
         if (temp != NULL){
