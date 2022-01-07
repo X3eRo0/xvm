@@ -38,7 +38,7 @@ u8 read_byte(section *sec, u32 addr, u8 opt_perm) {
     // read byte
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return (u8)*((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -52,7 +52,7 @@ u16 read_word(section *sec, u32 addr, u8 opt_perm) {
     // read word
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return (u16)*((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -66,7 +66,7 @@ u32 read_dword(section* sec, u32 addr, u8 opt_perm){
     // read dword
     section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
     if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & (PERM_READ | opt_perm))){
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return (u32)*((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
