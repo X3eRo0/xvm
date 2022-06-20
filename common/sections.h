@@ -6,6 +6,7 @@
 #define XVM_SECTIONS_H
 
 #include "const.h"
+#include "signals.h"
 
 
 #define WRITE_AS_BYTE 0
@@ -29,10 +30,10 @@ typedef struct section_entry_t {
 } section_entry;
 
 typedef struct section_t {
-    section_entry * sections;
+    section_entry* sections;
     u32 n_sections;
+    signal_report* errors;
 } section;
-
 
 typedef enum {
     XVM_INVALID_READ,

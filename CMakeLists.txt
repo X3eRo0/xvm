@@ -3,12 +3,15 @@ project(xvm C)
 
 set(CMAKE_C_STANDARD 11)
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g -O0")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
 
 add_executable(xvm
     xvm/xvm.c
     xvm/cpu.c
     xvm/cpu.h
     xvm/execute.c
+    common/signals.c
+    common/signals.h
     common/symbols.c
     common/symbols.h
     common/const.h
@@ -49,6 +52,22 @@ add_executable(xdis
     xasm/xdis.c
     xasm/disasm.c
     xasm/xasm_functions.c
+    common/loader.c
+    common/loader.h
+    common/symbols.c
+    common/symbols.h
+    common/sections.c
+    common/sections.h
+    common/segfault.c
+)
+
+add_executable(ropgadget
+    ropgadget/ropgadget.c
+    ropgadget/ropgadget.h
+    ropgadget/findgadgets.c
+    xasm/xasm.h
+    xasm/xasm_functions.c
+    xasm/disasm.c
     common/loader.c
     common/loader.h
     common/symbols.c

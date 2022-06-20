@@ -4,7 +4,8 @@
 
 #include "sections.h"
 
-section_entry* init_section_entry(){
+section_entry* init_section_entry()
+{
     // initialize section
 
     section_entry* sec_entry = (section_entry*)malloc(sizeof(section_entry));
@@ -20,11 +21,12 @@ section_entry* init_section_entry(){
     return sec_entry;
 }
 
-u32* get_reference(section *sec, u32 addr, u8 opt_perm) {
+u32* get_reference(section* sec, u32 addr, u8 opt_perm)
+{
     // read byte
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)) {
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
         return ((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
@@ -34,49 +36,53 @@ u32* get_reference(section *sec, u32 addr, u8 opt_perm) {
     return NULL;
 }
 
-u8 read_byte(section *sec, u32 addr, u8 opt_perm) {
+u8 read_byte(section* sec, u32 addr, u8 opt_perm)
+{
     // read byte
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)) {
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
-        return (u8)*((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
+        return (u8) * ((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
     }
 
     segfault(XVM_INVALID_ADDR, sec_entry, addr);
     return E_ERR;
 }
 
-u16 read_word(section *sec, u32 addr, u8 opt_perm) {
+u16 read_word(section* sec, u32 addr, u8 opt_perm)
+{
     // read word
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)) {
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
-        return (u16)*((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
+        return (u16) * ((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
     }
 
     segfault(XVM_INVALID_ADDR, sec_entry, addr);
     return E_ERR;
 }
 
-u32 read_dword(section* sec, u32 addr, u8 opt_perm){
+u32 read_dword(section* sec, u32 addr, u8 opt_perm)
+{
     // read dword
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & PERM_READ) || !(sec_entry->m_flag & opt_perm)) {
             segfault(XVM_INVALID_READ, sec_entry, addr);
         }
-        return (u32)*((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
+        return (u32) * ((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
     }
 
     segfault(XVM_INVALID_ADDR, sec_entry, addr);
     return E_ERR;
 }
 
-u32 write_section_entry_to_file(section_entry* sec_entry, FILE* file){
+u32 write_section_entry_to_file(section_entry* sec_entry, FILE* file)
+{
 
     fwrite("\xEF\xBE\xAD\xDE", sizeof(u32), 1, file);
     fwrite(sec_entry->m_name, sizeof(u8), strlen(sec_entry->m_name) + 1, file);
@@ -89,14 +95,16 @@ u32 write_section_entry_to_file(section_entry* sec_entry, FILE* file){
     return E_OK;
 }
 
-u32 write_raw_section_entry_to_file(section_entry* sec_entry, FILE* file){
+u32 write_raw_section_entry_to_file(section_entry* sec_entry, FILE* file)
+{
     fwrite(sec_entry->m_buff, sizeof(u8), sec_entry->m_ofst, file);
     return E_OK;
 }
 
-u32 append_byte(section_entry* sec_entry, u8 byte){
+u32 append_byte(section_entry* sec_entry, u8 byte)
+{
     // write byte
-    if (sec_entry->m_ofst >= sec_entry->v_size){
+    if (sec_entry->m_ofst >= sec_entry->v_size) {
         segfault(XVM_INVALID_ADDR, sec_entry, sec_entry->v_addr + sec_entry->m_ofst);
     }
     *((u8*)&sec_entry->m_buff[sec_entry->m_ofst]) = byte;
@@ -104,9 +112,10 @@ u32 append_byte(section_entry* sec_entry, u8 byte){
     return sizeof(u8);
 }
 
-u32 append_word(section_entry* sec_entry, u16 word){
+u32 append_word(section_entry* sec_entry, u16 word)
+{
     // write word
-    if (sec_entry->m_ofst >= sec_entry->v_size){
+    if (sec_entry->m_ofst >= sec_entry->v_size) {
         segfault(XVM_INVALID_ADDR, sec_entry, sec_entry->v_addr + sec_entry->m_ofst);
     }
     *((u16*)&sec_entry->m_buff[sec_entry->m_ofst]) = word;
@@ -114,9 +123,10 @@ u32 append_word(section_entry* sec_entry, u16 word){
     return sizeof(u16);
 }
 
-u32 append_dword(section_entry* sec_entry, u32 dword){
+u32 append_dword(section_entry* sec_entry, u32 dword)
+{
     // write dword
-    if (sec_entry->m_ofst >= sec_entry->v_size){
+    if (sec_entry->m_ofst >= sec_entry->v_size) {
         segfault(XVM_INVALID_ADDR, sec_entry, sec_entry->v_addr + sec_entry->m_ofst);
     }
 
@@ -125,21 +135,23 @@ u32 append_dword(section_entry* sec_entry, u32 dword){
     return sizeof(u32);
 }
 
-u32 memcpy_to_buffer(section_entry* sec_entry, char* buffer, u32 size){
+u32 memcpy_to_buffer(section_entry* sec_entry, char* buffer, u32 size)
+{
 
     u32 b_written = 0;
-    for (u32 i = 0; i < size; i++){
+    for (u32 i = 0; i < size; i++) {
         b_written += append_byte(sec_entry, buffer[i]);
     }
 
     return b_written;
 }
 
-u32 write_byte(section *sec, u32 addr, u8 byte) {
+u32 write_byte(section* sec, u32 addr, u8 byte)
+{
     // write byte
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & (PERM_WRITE))){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & (PERM_WRITE))) {
             segfault(XVM_INVALID_WRITE, sec_entry, addr);
         }
         *((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = byte;
@@ -150,11 +162,12 @@ u32 write_byte(section *sec, u32 addr, u8 byte) {
     return E_ERR;
 }
 
-u32 write_word(section *sec, u32 addr, u16 word){
+u32 write_word(section* sec, u32 addr, u16 word)
+{
     // write word
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & (PERM_WRITE))){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & (PERM_WRITE))) {
             segfault(XVM_INVALID_WRITE, sec_entry, addr);
         }
         *((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = word;
@@ -165,11 +178,12 @@ u32 write_word(section *sec, u32 addr, u16 word){
     return E_ERR;
 }
 
-u32 write_dword(section *sec, u32 addr, u32 dword){
+u32 write_dword(section* sec, u32 addr, u32 dword)
+{
     // write dword
-    section_entry * sec_entry = find_section_entry_by_addr(sec, addr);
-    if (sec_entry != NULL){
-        if (!(sec_entry->m_flag & PERM_WRITE)){
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        if (!(sec_entry->m_flag & PERM_WRITE)) {
             segfault(XVM_INVALID_WRITE, sec_entry, addr);
         }
         *((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = dword;
@@ -179,7 +193,8 @@ u32 write_dword(section *sec, u32 addr, u32 dword){
     return E_ERR;
 }
 
-u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag) {
+u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag)
+{
     // set section entry members
 
     if ((size % 0x1000) != 0) {
@@ -211,29 +226,27 @@ u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, 
     return E_OK;
 }
 
-u32 show_section_entry_info(section_entry* sec_entry){
+u32 show_section_entry_info(section_entry* sec_entry)
+{
 
     printf(KGRN "%8s" KNRM, sec_entry->m_name);
     printf(KBLU "        #0x%X" KNRM, sec_entry->v_size);
     printf(KYEL "    ");
     if (sec_entry->m_flag & PERM_READ) {
         printf("r");
-    }
-    else {
+    } else {
         printf("-");
     }
 
     if (sec_entry->m_flag & PERM_WRITE) {
         printf("w");
-    }
-    else {
+    } else {
         printf("-");
     }
 
     if (sec_entry->m_flag & PERM_EXEC) {
         printf("x");
-    }
-    else {
+    } else {
         printf("-");
     }
     printf(KNRM "       ");
@@ -247,15 +260,18 @@ u32 show_section_entry_info(section_entry* sec_entry){
     return E_OK;
 }
 
-u32 fini_section_entry(section_entry* sec_entry){
+u32 fini_section_entry(section_entry* sec_entry)
+{
     // destroy section structure
 
-    if (sec_entry->m_buff){
-        free(sec_entry->m_buff); sec_entry->m_buff = NULL;
+    if (sec_entry->m_buff) {
+        free(sec_entry->m_buff);
+        sec_entry->m_buff = NULL;
     }
 
-    if (sec_entry->m_name){
-        free(sec_entry->m_name); sec_entry->m_name = NULL;
+    if (sec_entry->m_name) {
+        free(sec_entry->m_name);
+        sec_entry->m_name = NULL;
     }
 
     sec_entry->v_size = 0;
@@ -265,28 +281,32 @@ u32 fini_section_entry(section_entry* sec_entry){
     sec_entry->m_flag = 0;
 
     sec_entry->next = NULL;
-    free(sec_entry); sec_entry = NULL;
+    free(sec_entry);
+    sec_entry = NULL;
 
     return E_OK;
 }
 
-section* init_section(){
+section* init_section()
+{
     // initialize section list
 
-    section* sec  = (section*)malloc(sizeof(section));
+    section* sec = (section*)calloc(1, sizeof(section));
     sec->sections = NULL;
     sec->n_sections = 0;
+    sec->errors = (signal_report*)calloc(1, sizeof(signal_report));
     return sec;
 }
 
-section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 flag){
+section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 flag)
+{
     // add new section to section list
 
-    size = (size % 0x1000) == 0 ? size : (size/0x1000 + 1) * 0x1000;
+    size = (size % 0x1000) == 0 ? size : (size / 0x1000 + 1) * 0x1000;
     size = size > MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : size;
     size = size == 0 ? 0x1000 : size;
 
-    if ((u64) addr + (u64) size > 0x100000000){
+    if ((u64)addr + (u64)size > 0x100000000) {
         return NULL;
     }
 
@@ -307,7 +327,7 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
     // if new section's v_addr is smaller than the head of the list then change
     // the head of the list
 
-    if (addr + size < temp->v_addr){
+    if (addr + size < temp->v_addr) {
 
         // this check ensures that the first section in the list is always
         // at the lowest address possible
@@ -320,23 +340,22 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
         return new;
     }
 
+    while (temp != NULL) {
 
-    while (temp != NULL){
-
-        if (addr >= temp->v_addr && addr < section_end(temp)){
-            if (temp->v_size != size && temp->next != NULL && temp->v_addr + size < temp->next->v_addr){
+        if (addr >= temp->v_addr && addr < section_end(temp)) {
+            if (temp->v_size != size && temp->next != NULL && temp->v_addr + size < temp->next->v_addr) {
                 temp->v_size = size;
                 temp->m_buff = realloc(temp->m_buff, size);
             }
-            if (temp->m_flag != flag){
+            if (temp->m_flag != flag) {
                 temp->m_flag = flag;
             }
 
             return temp;
         }
 
-        if (prev != NULL){
-            if ((section_end(prev) < addr) && (addr + size < temp->v_addr)){
+        if (prev != NULL) {
+            if ((section_end(prev) < addr) && (addr + size < temp->v_addr)) {
                 // insert the new section here
                 break;
             }
@@ -354,13 +373,12 @@ section_entry* add_section(section* sec, char* name, u32 size, u32 addr, u32 fla
     return prev->next;
 }
 
-
-
-section_entry* find_section_entry_by_name(section* sec, char* name){
+section_entry* find_section_entry_by_name(section* sec, char* name)
+{
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
-        if (temp->m_name != NULL && !strncmp(temp->m_name, name, strlen(name))){
+    while (temp != NULL) {
+        if (temp->m_name != NULL && !strncmp(temp->m_name, name, strlen(name))) {
             return temp;
         }
         temp = temp->next;
@@ -370,11 +388,12 @@ section_entry* find_section_entry_by_name(section* sec, char* name){
     return NULL;
 }
 
-section_entry* find_section_entry_by_addr(section* sec, u32 addr){
+section_entry* find_section_entry_by_addr(section* sec, u32 addr)
+{
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
-        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size){
+    while (temp != NULL) {
+        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size) {
             return temp;
         }
         temp = temp->next;
@@ -384,7 +403,8 @@ section_entry* find_section_entry_by_addr(section* sec, u32 addr){
     return NULL;
 }
 
-u32 show_section_info(section* sec){
+u32 show_section_info(section* sec)
+{
 
     // FIXME : COMMENT FOR RELEASE
     printf("[" KGRN "+" KNRM "] Dumping Section Info\n");
@@ -398,10 +418,11 @@ u32 show_section_info(section* sec){
     return E_OK;
 }
 
-u32 write_section_to_file(section* sec, FILE* file){
+u32 write_section_to_file(section* sec, FILE* file)
+{
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
+    while (temp != NULL) {
         write_section_entry_to_file(temp, file);
         temp = temp->next;
     }
@@ -409,9 +430,10 @@ u32 write_section_to_file(section* sec, FILE* file){
     return E_OK;
 }
 
-u32 write_raw_section_to_file(section* sec, FILE* file){
+u32 write_raw_section_to_file(section* sec, FILE* file)
+{
     section_entry* temp = sec->sections;
-    while(temp != NULL){
+    while (temp != NULL) {
         write_raw_section_entry_to_file(temp, file);
         temp = temp->next;
     }
@@ -419,80 +441,91 @@ u32 write_raw_section_to_file(section* sec, FILE* file){
     return E_OK;
 }
 
-u32 write_buffer_to_section_by_name(section* sec, char* name, u32 buffer, u32 write_as_flag){
+u32 write_buffer_to_section_by_name(section* sec, char* name, u32 buffer, u32 write_as_flag)
+{
 
     if (sec == NULL) {
         return E_ERR;
     }
 
-    if (sec->sections == NULL){
+    if (sec->sections == NULL) {
         return E_ERR;
     }
 
     section_entry* temp = sec->sections;
 
-    while (temp != NULL){
-        if (!strncmp(temp->m_name, name, strlen(name))){
+    while (temp != NULL) {
+        if (!strncmp(temp->m_name, name, strlen(name))) {
             break;
         }
         temp = temp->next;
     }
 
-    if (temp == NULL){
+    if (temp == NULL) {
         return E_ERR;
     }
 
-    switch(write_as_flag){
-        case WRITE_AS_BYTE:
-            append_byte(temp, (u8) buffer); return E_OK;
-        case WRITE_AS_WORD:
-            append_word(temp, (u16) buffer); return E_OK;
-        case WRITE_AS_DWORD:
-            append_dword(temp, (u32) buffer); return E_OK;
-        default: return E_ERR;
+    switch (write_as_flag) {
+    case WRITE_AS_BYTE:
+        append_byte(temp, (u8)buffer);
+        return E_OK;
+    case WRITE_AS_WORD:
+        append_word(temp, (u16)buffer);
+        return E_OK;
+    case WRITE_AS_DWORD:
+        append_dword(temp, (u32)buffer);
+        return E_OK;
+    default:
+        return E_ERR;
     }
 }
 
-u32 write_buffer_to_section_by_addr(section* sec, u32 addr, u32 buffer, u32 write_as_flag){
+u32 write_buffer_to_section_by_addr(section* sec, u32 addr, u32 buffer, u32 write_as_flag)
+{
 
     if (sec == NULL) {
         return E_ERR;
     }
 
-    if (sec->sections == NULL){
+    if (sec->sections == NULL) {
         return E_ERR;
     }
 
     section_entry* temp = find_section_entry_by_addr(sec, addr);
 
-    if (temp == NULL){
+    if (temp == NULL) {
         return E_ERR;
     }
 
-    switch(write_as_flag){
-        case WRITE_AS_BYTE:
-            append_byte(temp, (u8) buffer); return E_OK;
-        case WRITE_AS_WORD:
-            append_word(temp, (u16) buffer); return E_OK;
-        case WRITE_AS_DWORD:
-            append_dword(temp, (u32) buffer); return E_OK;
-        default: return E_ERR;
+    switch (write_as_flag) {
+    case WRITE_AS_BYTE:
+        append_byte(temp, (u8)buffer);
+        return E_OK;
+    case WRITE_AS_WORD:
+        append_word(temp, (u16)buffer);
+        return E_OK;
+    case WRITE_AS_DWORD:
+        append_dword(temp, (u32)buffer);
+        return E_OK;
+    default:
+        return E_ERR;
     }
 }
 
-u32 memcpy_buffer_to_section_by_name(section* sec, char* name, char* buffer, u32 size){
+u32 memcpy_buffer_to_section_by_name(section* sec, char* name, char* buffer, u32 size)
+{
 
     if (sec == NULL) {
         return E_ERR;
     }
 
-    if (sec->sections == NULL){
+    if (sec->sections == NULL) {
         return E_ERR;
     }
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
-        if (!strncmp(temp->m_name, name, strlen(name))){
+    while (temp != NULL) {
+        if (!strncmp(temp->m_name, name, strlen(name))) {
             break;
         }
         temp = temp->next;
@@ -500,19 +533,20 @@ u32 memcpy_buffer_to_section_by_name(section* sec, char* name, char* buffer, u32
     return memcpy_to_buffer(temp, buffer, size);
 }
 
-u32 memcpy_buffer_to_section_by_addr(section* sec, u32 addr, char* buffer, u32 size){
+u32 memcpy_buffer_to_section_by_addr(section* sec, u32 addr, char* buffer, u32 size)
+{
 
     if (sec == NULL) {
         return E_ERR;
     }
 
-    if (sec->sections == NULL){
+    if (sec->sections == NULL) {
         return E_ERR;
     }
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
-        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size){
+    while (temp != NULL) {
+        if (addr >= temp->v_addr && addr < temp->v_addr + temp->v_size) {
             break;
         }
         temp = temp->next;
@@ -520,11 +554,12 @@ u32 memcpy_buffer_to_section_by_addr(section* sec, u32 addr, char* buffer, u32 s
     return memcpy_to_buffer(temp, buffer, size);
 }
 
-u32 reset_address_of_sections(section* sec){
+u32 reset_address_of_sections(section* sec)
+{
     // reset address member to 0
 
     section_entry* temp = sec->sections;
-    while (temp != NULL){
+    while (temp != NULL) {
         temp->a_size = 0;
         temp = temp->next;
     }
@@ -532,19 +567,21 @@ u32 reset_address_of_sections(section* sec){
     return E_OK;
 }
 
-u32 fini_section(section* sec){
+u32 fini_section(section* sec)
+{
     // destroy section list
 
     section_entry* temp = sec->sections;
     section_entry* prev = NULL;
 
-    while (temp != NULL){
+    while (temp != NULL) {
         prev = temp;
         temp = temp->next;
         fini_section_entry(prev);
     }
 
     sec->sections = NULL;
-    free(sec); sec = NULL;
+    free(sec);
+    sec = NULL;
     return E_OK;
 }

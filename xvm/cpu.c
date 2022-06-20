@@ -1,34 +1,39 @@
 //
 // Created by X3eRo0 on 4/15/2021.
 //
-
 #include "cpu.h"
 
-void reset_reg(xvm_reg * regs){
+void reset_reg(xvm_reg* regs)
+{
     memset(regs, 0, sizeof(xvm_reg));
     regs->pc = XVM_DFLT_EP;
     regs->sp = XVM_DFLT_SP;
     regs->bp = XVM_DFLT_SP;
 }
 
-void reset_flags(xvm_flags * flags){
+void reset_flags(xvm_flags* flags)
+{
     flags->flags = (1 << XVM_RF);
 }
 
-u8 get_RF(xvm_cpu * cpu){
+u8 get_RF(xvm_cpu* cpu)
+{
     return cpu->flags.flags & (1 << XVM_RF);
 }
 
-u8 get_ZF(xvm_cpu * cpu){
+u8 get_ZF(xvm_cpu* cpu)
+{
     return cpu->flags.flags & (1 << XVM_ZF);
 }
 
-u8 get_CF(xvm_cpu * cpu){
+u8 get_CF(xvm_cpu* cpu)
+{
     return cpu->flags.flags & (1 << XVM_CF);
 }
 
-u8 set_RF(xvm_cpu * cpu, u8 bit){
-    if (bit){
+u8 set_RF(xvm_cpu* cpu, u8 bit)
+{
+    if (bit) {
         cpu->flags.flags |= (1 << XVM_RF);
     } else {
         cpu->flags.flags &= ~(1 << XVM_RF);
@@ -36,8 +41,9 @@ u8 set_RF(xvm_cpu * cpu, u8 bit){
     return cpu->flags.flags & (1 << XVM_RF);
 }
 
-u8 set_ZF(xvm_cpu * cpu, u8 bit){
-    if (bit){
+u8 set_ZF(xvm_cpu* cpu, u8 bit)
+{
+    if (bit) {
         cpu->flags.flags |= (1 << XVM_ZF);
     } else {
         cpu->flags.flags &= ~(1 << XVM_ZF);
@@ -45,8 +51,9 @@ u8 set_ZF(xvm_cpu * cpu, u8 bit){
     return cpu->flags.flags & (1 << XVM_ZF);
 }
 
-u8 set_CF(xvm_cpu * cpu, u8 bit){
-    if (bit){
+u8 set_CF(xvm_cpu* cpu, u8 bit)
+{
+    if (bit) {
         cpu->flags.flags |= (1 << XVM_CF);
     } else {
         cpu->flags.flags &= ~(1 << XVM_CF);
@@ -54,23 +61,14 @@ u8 set_CF(xvm_cpu * cpu, u8 bit){
     return cpu->flags.flags & (1 << XVM_CF);
 }
 
-xvm_cpu * init_xvm_cpu(){
-    xvm_cpu * cpu = (xvm_cpu *)malloc(sizeof(xvm_cpu));
+xvm_cpu* init_xvm_cpu()
+{
+    xvm_cpu* cpu = (xvm_cpu*)malloc(sizeof(xvm_cpu));
+    cpu->errors = (signal_report*)calloc(1, sizeof(signal_report));
     reset_reg(&cpu->regs);
     reset_flags(&cpu->flags);
 
     return cpu;
-}
-
-void cpu_error(u32 error, char *msg, u32 addr) {
-    fprintf(stderr, "[" KRED "-" KNRM "] ");
-    switch (error) {
-        case XVM_FP_EXCEPTION: fprintf(stderr, "Divide by 0 : %s @ 0x%x\n", msg, addr);break;
-        case XVM_ILLEGAL_INST: fprintf(stderr, "Illegal Instruction : %s @ 0x%x\n", msg, addr); break;
-        default: fprintf(stderr, "XVM BRUH MOMENT\n");break;
-    }
-
-    exit((int) error);
 }
 
 // FIXME: REMOVE IN RELEASE
@@ -82,22 +80,65 @@ void show_registers(xvm_cpu* cpu, xvm_bin * bin){
     printf("$r4 : 0x%.8X\n$r5 : 0x%.8X\n$r6 : 0x%.8X\n$r7 : 0x%.8X\n", cpu->regs.r4, cpu->regs.r5, cpu->regs.r6, cpu->regs.r7);
     printf("$r8 : 0x%.8X\n$r9 : 0x%.8X\n$ra : 0x%.8X\n$rb : 0x%.8X\n", cpu->regs.r8, cpu->regs.r9, cpu->regs.ra, cpu->regs.rb);
     printf("$rc : 0x%.8X\n$pc : 0x%.8X\n$bp : 0x%.8X\n$sp : 0x%.8X\n", cpu->regs.rc, cpu->regs.pc, cpu->regs.bp, cpu->regs.sp);
-
     //for (u32 i = XVM_DFLT_SP; i >= cpu->regs.sp; i -= 4){
     //    printf("0x%.8X : 0x%.8X\n", i, read_dword(bin->x_section, i, PERM_READ));
     //}
 }
 */
 
-void fde_cpu(xvm_cpu *cpu, xvm_bin *bin){
+u32 signal_abort(signal_report* err, xvm_cpu* cpu)
+{
+    if (err != NULL) {
+
+        if (err->signal_id == NOSIGNAL) {
+            return E_OK;
+        }
+
+        set_RF(cpu, 0);
+
+        // FILE *fp = fopen("/tmp/xwars_2", "w");
+        // setbuf(fp, 0);
+
+        switch (err->signal_id) {
+        case XSIGFPE:
+            fprintf(stderr /*fp*/, "[-] Floating point exception (core not dumped)\n");
+            break;
+        case XSIGILL:
+            fprintf(stderr /*fp*/, "[-] Illegal Instruction (core not dumped)\n");
+            break;
+        case XSIGTRAP:
+            fprintf(stderr /*fp*/, "[-] Trap/Breakpoint\n");
+            break;
+        case XSIGSTOP:
+            break;
+        default:
+            fprintf(stderr /*fp*/, "[-] Segmentation Fault (core not dumped)\n");
+            break;
+        }
+        // fclose(fp);
+    }
+    return E_ERR;
+}
+
+void fde_cpu(xvm_cpu* cpu, xvm_bin* bin)
+{
     u32 instr_size = 0;
-    while (get_RF(cpu)){
+    while (get_RF(cpu)) {
         // show_registers(cpu, bin);
         instr_size = do_execute(cpu, bin);
+        if (signal_abort(cpu->errors, cpu) == E_ERR) {
+            return;
+        }
+        if (signal_abort(bin->x_section->errors, cpu) == E_ERR) {
+            return;
+        }
     }
 }
 
-void fini_xvm_cpu(xvm_cpu * cpu){
+void fini_xvm_cpu(xvm_cpu* cpu)
+{
+    free(cpu->errors);
     memset(cpu, 0, sizeof(xvm_cpu));
-    free(cpu); cpu = NULL;
+    free(cpu);
+    cpu = NULL;
 }
