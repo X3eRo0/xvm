@@ -78,7 +78,7 @@ const char* registers[XVM_NREGS] = {
 };
 
 
-void xasm_disassemble(xvm_bin* bin, section_entry* sec, u32 ninstr){
+void xasm_disassemble(xvm_bin* bin, section_entry* sec, u32  addr, u32 ninstr){
 
     if (sec->m_name == NULL){
         printf("\n[" KGRN "+" KNRM "] Disassembling <Unnamed Section>\n");
@@ -87,8 +87,15 @@ void xasm_disassemble(xvm_bin* bin, section_entry* sec, u32 ninstr){
     }
     printf("[" KGRN "+" KNRM "] Raw Size : %d BYTES\n", sec->m_ofst);
     printf("[" KGRN "+" KNRM "] Address  : 0x%X\n", sec->v_addr);
+
+    // sanity check
+    if (!(addr >= sec->v_addr && addr < sec->v_addr + sec->v_size)){
+        printf("[" KRED "+" KNRM "] 0x%XA Address not found\n", addr);
+        return;
+    }
+
     char* bytecode = sec->m_buff;    // bytecode array
-    u32 pc = 0;                      // pc
+    u32 pc = addr - sec->v_addr;     // pc
 
     u8 opcd = 0;
     u8 mode = 0;

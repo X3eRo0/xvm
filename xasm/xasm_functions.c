@@ -174,6 +174,9 @@ u32 xasm_escape_string(char* unescaped) {
 
 u32 xasm_resolve_number(char* num_s){
     // detect base and return number
+    if (num_s == NULL){
+        return 0;
+    }
 
     if (*num_s == '\x00' || *num_s == '\n'){
         return 0;
