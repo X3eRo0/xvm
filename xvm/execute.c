@@ -1251,6 +1251,8 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
 
         if (res & (1 << 31)){
             set_SF(cpu, 1);
+        } else {
+            set_SF(cpu, 0);
         }
         break;
     }

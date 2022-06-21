@@ -88,50 +88,53 @@ reverse_bb0_4:
     pop    $bp
     ret
                                         ; -- End function
-str2int:                                ; @str2int
-; %bb.0:
-    push    $bp
-    mov    $bp, $sp
-    sub    $sp, #0x20
-    mov    [$bp - #0x8], $r1
-    mov    $r1, [$bp - #0x8]
-    call    strlen
-                                        ; kill: def $$r0 killed $$r0 killed $$r0
-    mov    [$bp - #0xc], $r0
-    mov    [$bp - #0x14], #0x0
-    mov    [$bp - #0x18], #0x1
-    mov    [$bp - #0x10], #0x0
-str2int_bb1_1:                                ; =>This Inner Loop Header: Depth=1
-    mov    $r0, [$bp - #0x10]
-    cmp    $r0, [$bp - #0xc]
-    jae    str2int_bb1_4
-; %bb.2:                                ;   in Loop: Header=BB1_1 Depth=1
-    mov    $r0, [$bp - #0x14]
-    mov    $r4, [$bp - #0x8]
-    mov    $r5, [$bp - #0xc]
-    mov    $r2, [$bp - #0x10]
-    add    $r2, #0x1
-    sub    $r5, $r2
-    mov    $r5, $r5
-    mov    $r1, $r5
-    add     $r4, $r1
-    movb    $r5, [$r4]
-    sub    $r5, #0x30
-    mul    $r5, [$bp - #0x18]
-    add    $r0, $r5
-    mov    [$bp - #0x14], $r0
-    mul   [$bp - 24], #0xa
-    mov $r0,   [$bp - 24]
-    mov    [$bp - #0x18], $r0
-; %bb.3:                                ;   in Loop: Header=BB1_1 Depth=1
-    mov    $r0, [$bp - #0x10]
-    add    $r0, #0x1
-    mov    [$bp - #0x10], $r0
-    jmp    str2int_bb1_1
-str2int_bb1_4:
-    mov    $r0, [$bp - #0x14]
-    add    $sp, #0x20
-    pop    $bp
+
+str2int:
+    push      $bp
+    mov       $bp, $sp
+    mov       [$bp - #0x8], $r1
+    mov       [$bp - #0xc], #0x0
+    mov       [$bp - #0x10], #0x1
+    mov       [$bp - #0x14], #0x0
+    mov       $r0, [$bp - #0x8]
+    movb      $r4, [$r0]
+    cmpb      $r4, #0x2d
+    jne       str2int.LBB2_2
+    mov       [$bp - #0x10], #0xffffffff
+    mov       $r0, [$bp - #0x14]
+    add       $r0, #0x1
+    mov       [$bp - #0x14], $r0
+
+str2int.LBB2_2:
+    jmp       str2int.LBB2_3
+
+str2int.LBB2_3:
+    mov       $r0, [$bp - #0x8]
+    mov       $r4, [$bp - #0x14]
+    mov       $r5, $r4
+    add       $r0, $r5
+    movb      $r4, [$r0]
+    cmp       $r4, #0x0
+    je        str2int.LBB2_6
+    mul       [$bp - #0xc], #0xa
+    mov       $r0, [$bp - #0xc]
+    mov       $r4, [$bp - #0x8]
+    mov       $r5, [$bp - #0x14]
+    mov       $r2, $r5
+    add       $r4, $r2
+    movb      $r5, [$r4]
+    add       $r0, $r5
+    sub       $r0, #0x30
+    mov       [$bp - #0xc], $r0
+    mov       $r0, [$bp - #0x14]
+    add       $r0, #0x1
+    mov       [$bp - #0x14], $r0
+    jmp       str2int.LBB2_3
+
+str2int.LBB2_6:
+    mov       $r0, [$bp - #0x10]
+    mul       $r0, [$bp - #0xc]
+    pop       $bp
     ret
                                         ; -- End function
 int2str:                                ; @int2str
