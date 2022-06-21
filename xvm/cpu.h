@@ -80,8 +80,8 @@ typedef enum {
 typedef enum {
     XVM_ZF, // zero flag
     XVM_CF, // carry flag
+    XVM_SF, // sign flag
     XVM_RF, // CPU Halt status
-    XVM_SF,
 } xvm_flag_pos;
 
 typedef enum {
@@ -106,6 +106,8 @@ xvm_cpu* init_xvm_cpu();
 u8 get_RF(xvm_cpu* cpu);
 u8 get_CF(xvm_cpu* cpu);
 u8 get_ZF(xvm_cpu* cpu);
+u8 get_SF(xvm_cpu* cpu);
+u8 set_SF(xvm_cpu* cpu, u8 bit);
 u8 set_RF(xvm_cpu* cpu, u8 bit);
 u8 set_CF(xvm_cpu* cpu, u8 bit);
 u8 set_ZF(xvm_cpu* cpu, u8 bit);

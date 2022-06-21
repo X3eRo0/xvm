@@ -28,6 +28,7 @@ add_executable(xasm
     xasm/xasm.h
     xasm/xasm_functions.c
     xasm/parse.c
+    xasm/mnemonics.h
     common/symbols.c
     common/symbols.h
     common/sections.c
@@ -51,6 +52,7 @@ add_executable(xinfo
 add_executable(xdis
     xasm/xdis.c
     xasm/disasm.c
+    xasm/mnemonics.h
     xasm/xasm_functions.c
     common/loader.c
     common/loader.h
@@ -68,6 +70,7 @@ add_executable(ropgadget
     xasm/xasm.h
     xasm/xasm_functions.c
     xasm/disasm.c
+    xasm/mnemonics.h
     common/loader.c
     common/loader.h
     common/symbols.c

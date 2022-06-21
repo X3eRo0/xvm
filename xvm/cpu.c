@@ -31,6 +31,21 @@ u8 get_CF(xvm_cpu* cpu)
     return cpu->flags.flags & (1 << XVM_CF);
 }
 
+u8 get_SF(xvm_cpu* cpu)
+{
+    return cpu->flags.flags & (1 << XVM_SF);
+}
+
+u8 set_SF(xvm_cpu* cpu, u8 bit)
+{
+    if (bit) {
+        cpu->flags.flags |= (1 << XVM_SF);
+    } else {
+        cpu->flags.flags &= ~(1 << XVM_SF);
+    }
+    return cpu->flags.flags & (1 << XVM_SF);
+}
+
 u8 set_RF(xvm_cpu* cpu, u8 bit)
 {
     if (bit) {

@@ -127,7 +127,7 @@ u32     xasm_resolve_opcode(char* mnemonic);
 u32     xasm_resolve_argument(arg* arg, xasm* xasm, char* args, bool calc_size);
 char*   xasm_resolve_mnemonic(u32 opcode);
 void    xasm_disassemble(xvm_bin* bin, section_entry* sec, u32 addr, u32 ninstr);
-u32     xasm_disassemble_bytes(FILE* fp, xvm_bin* bin, const char* bytecode, u32 len, u32 address, u32 ninstr);
+u32     xasm_disassemble_bytes(FILE* fp, xvm_bin* bin, const char* bytecode, u32 len, u32 address, u32 ninstr, u32 need_clean);
 u32     xasm_assemble(xasm *xasm, section_entry *default_section_entry, FILE **inputf, u32 ifiles);
 u32     xasm_assemble_line(xasm* xasm, char* line, section_entry** current_section_entry, bool calc_size);
 u32     xasm_open_ifile(xasm* xasm, char* file);

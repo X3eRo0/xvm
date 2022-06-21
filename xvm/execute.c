@@ -1234,7 +1234,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
             return E_ERR;
         }
 
-        if (*arg1 == *arg2) {
+        u32 res = *arg1 - *arg2;
+
+        if (res == 0) {
             set_ZF(cpu, 1);
         }
 
@@ -1245,6 +1247,10 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         if (*arg1 > *arg2) {
             set_ZF(cpu, 0);
             set_CF(cpu, 0);
+        }
+
+        if (res & (1 << 31)){
+            set_SF(cpu, 1);
         }
         break;
     }
@@ -1335,7 +1341,8 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         break;
     }
 
-    // jz
+    // jz/je
+    case XVM_OP_JE:
     case XVM_OP_JZ: {
 
         if (!arg1) {
@@ -1350,7 +1357,9 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         break;
     }
 
-    // rjz
+
+    // rjz/rje
+    case XVM_OP_RJE:
     case XVM_OP_RJZ: {
 
         if (!arg1) {
@@ -1365,7 +1374,8 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         break;
     }
 
-    // jnz
+    // jnz/jne
+    case XVM_OP_JNE:
     case XVM_OP_JNZ: {
 
         if (!arg1) {
@@ -1379,7 +1389,8 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         break;
     }
 
-    // rjnz
+    // rjnz/rjne
+    case XVM_OP_RJNE:
     case XVM_OP_RJNZ: {
 
         if (!arg1) {
@@ -1406,6 +1417,21 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         }
         break;
     }
+
+    // jg
+    case XVM_OP_JG: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (!(get_SF(cpu) || get_ZF(cpu))) {
+            cpu->regs.pc = *arg1;
+        }
+        break;
+    }
+
     // rja
     case XVM_OP_RJA: {
 
@@ -1420,6 +1446,20 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         break;
     }
 
+    // rjg
+    case XVM_OP_RJG: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (!(get_SF(cpu) || get_ZF(cpu))) {
+            cpu->regs.pc += (signed int)*arg1 - size;
+        }
+        break;
+    }
+
     // jb
     case XVM_OP_JB: {
 
@@ -1428,13 +1468,27 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
             return E_ERR;
         }
 
-        if (!get_ZF(cpu) && get_CF(cpu)) {
+        if (get_CF(cpu)) {
             cpu->regs.pc = *arg1;
         }
         break;
     }
 
-    // jb
+    // jl
+    case XVM_OP_JL: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (get_SF(cpu)) {
+            cpu->regs.pc = *arg1;
+        }
+        break;
+    }
+
+    // rjb
     case XVM_OP_RJB: {
 
         if (!arg1) {
@@ -1442,7 +1496,21 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
             return E_ERR;
         }
 
-        if (!get_ZF(cpu) && get_CF(cpu)) {
+        if (get_CF(cpu)) {
+            cpu->regs.pc += (signed int)*arg1 - size;
+        }
+        break;
+    }
+
+    // rjl
+    case XVM_OP_RJL: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (get_SF(cpu)) {
             cpu->regs.pc += (signed int)*arg1 - size;
         }
         break;
@@ -1476,6 +1544,34 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
         break;
     }
 
+    // jge
+    case XVM_OP_JGE: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (!get_SF(cpu)) {
+            cpu->regs.pc = *arg1;
+        }
+        break;
+    }
+
+    // rjge
+    case XVM_OP_RJGE: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (!get_SF(cpu)) {
+            cpu->regs.pc += (signed int)*arg1 - size;
+        }
+        break;
+    }
+
     // jbe
     case XVM_OP_JBE: {
 
@@ -1486,6 +1582,34 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
 
         if (get_ZF(cpu) || get_CF(cpu)) {
             cpu->regs.pc = *arg1;
+        }
+        break;
+    }
+
+    // jle
+    case XVM_OP_JLE: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (get_SF(cpu) || get_ZF(cpu)) {
+            cpu->regs.pc = *arg1;
+        }
+        break;
+    }
+
+    // rjle
+    case XVM_OP_RJLE: {
+
+        if (!arg1) {
+            raise_signal(cpu->errors, XSIGILL, cpu->regs.pc, 0);
+            return E_ERR;
+        }
+
+        if (get_SF(cpu) || get_ZF(cpu)) {
+            cpu->regs.pc += (signed int)*arg1 - size;
         }
         break;
     }
