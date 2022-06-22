@@ -62,6 +62,7 @@ typedef enum {
     XVM_OP_RET,
     XVM_OP_CALL,
     XVM_OP_SYSC,
+    XVM_OP_TRAP,
     XVM_OP_LSU,
     XVM_OP_RSU,
     XVM_OP_ADD,
@@ -125,6 +126,7 @@ typedef enum {
     XVM_OP_RJAE,
     XVM_OP_RJLE,
     XVM_OP_RJBE,
+    XVM_OP_LAST,
 } xvm_opcodes;
 
 #define KNRM "\x1B[0m"

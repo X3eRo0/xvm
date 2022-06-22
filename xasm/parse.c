@@ -3,7 +3,6 @@
 //
 
 #include "xasm.h"
-#include "mnemonics.h"
 
 
 const char* registers[XVM_NREGS] = {

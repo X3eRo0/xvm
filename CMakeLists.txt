@@ -20,7 +20,6 @@ add_executable(xvm
     common/sections.c
     common/sections.h
     xvm/syscall.c
-    common/segfault.c
 )
 
 add_executable(xasm
@@ -28,14 +27,15 @@ add_executable(xasm
     xasm/xasm.h
     xasm/xasm_functions.c
     xasm/parse.c
-    xasm/mnemonics.h
+    xasm/mnemonics.c
+    common/signals.c
+    common/signals.h
     common/symbols.c
     common/symbols.h
     common/sections.c
     common/sections.h
     common/loader.c
     common/loader.h
-    common/segfault.c
 )
 
 add_executable(xinfo
@@ -44,23 +44,25 @@ add_executable(xinfo
     common/loader.h
     common/symbols.c
     common/symbols.h
+    common/signals.c
+    common/signals.h
     common/sections.c
     common/sections.h
-    common/segfault.c
 )
 
 add_executable(xdis
     xasm/xdis.c
     xasm/disasm.c
-    xasm/mnemonics.h
     xasm/xasm_functions.c
+    xasm/mnemonics.c
     common/loader.c
     common/loader.h
     common/symbols.c
     common/symbols.h
+    common/signals.c
+    common/signals.h
     common/sections.c
     common/sections.h
-    common/segfault.c
 )
 
 add_executable(ropgadget
@@ -70,12 +72,13 @@ add_executable(ropgadget
     xasm/xasm.h
     xasm/xasm_functions.c
     xasm/disasm.c
-    xasm/mnemonics.h
+    xasm/mnemonics.c
     common/loader.c
     common/loader.h
     common/symbols.c
     common/symbols.h
+    common/signals.c
+    common/signals.h
     common/sections.c
     common/sections.h
-    common/segfault.c
 )

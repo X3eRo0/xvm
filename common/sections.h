@@ -49,10 +49,10 @@ u32                 set_section_entry(section_entry* sec_entry, char* name, u32 
 u32                 write_raw_section_to_file(section* sec, FILE* file);
 u32                 write_section_entry_to_file(section_entry* sec_entry, FILE* file);
 u32                 write_raw_section_entry_to_file(section_entry* sec_entry, FILE* file);
-u32                 append_byte(section_entry* sec_entry, u8 byte);
-u32                 append_word(section_entry* sec_entry, u16 word);
-u32                 append_dword(section_entry* sec_entry, u32 dword);
-u32                 memcpy_to_buffer(section_entry* sec_entry, char* buffer, u32 size);
+u32                 append_byte(section* sec, section_entry* sec_entry, u8 byte);
+u32                 append_word(section* sec, section_entry* sec_entry, u16 word);
+u32                 append_dword(section* sec, section_entry* sec_entry, u32 dword);
+u32                 memcpy_to_buffer(section* sec, section_entry* sec_entry, char* buffer, u32 size);
 u32                 show_section_entry_info(section_entry* sec_entry);
 u32                 fini_section_entry(section_entry* sec_entry);
 section*            init_section();

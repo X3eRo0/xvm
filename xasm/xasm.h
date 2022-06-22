@@ -39,6 +39,8 @@ typedef enum {
 
 } xvm_registers;
 
+extern const char *mnemonics[XVM_OP_LAST];
+extern const int inst_to_args_dict[XVM_OP_LAST];
 
 // enum for types of
 // arguments to instruction
@@ -51,6 +53,12 @@ typedef enum {
     ARG_PTRD = 4,  // mov $r1, [$r0]; mov $r1, [#0x1234]; mov $r1, [$r0+#0x1234]
 
 } xasm_argument_t;
+
+typedef enum{
+    ARG0,
+    ARG1,
+    ARG2,
+} xasm_no_of_args;
 
 typedef enum {
     E_INVALID_INPUTFILE,

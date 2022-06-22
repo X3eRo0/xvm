@@ -174,7 +174,7 @@ u32 xvm_bin_load_file(xvm_bin* bin, char* filename){
 
         // after allocating the section read and fill the bytes
         for (u32 j = 0, byte = 0; j < section_indx && (byte = fgetc(bin->x_file)) != -1; j++){
-            append_byte(section, byte);
+            append_byte(bin->x_section, section, byte);
         }
     }
 
