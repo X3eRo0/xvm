@@ -111,9 +111,6 @@ u32 signal_abort(signal_report* err, xvm_cpu* cpu)
 
         set_RF(cpu, 0);
 
-        // FILE *fp = fopen("/tmp/xwars_2", "w");
-        // setbuf(fp, 0);
-
         switch (err->signal_id) {
         case XSIGFPE:
             fprintf(stderr /*fp*/, "[-] Floating point exception (core not dumped)\n");
@@ -130,7 +127,6 @@ u32 signal_abort(signal_report* err, xvm_cpu* cpu)
             fprintf(stderr /*fp*/, "[-] Segmentation Fault (core not dumped)\n");
             break;
         }
-        // fclose(fp);
     }
     return E_ERR;
 }

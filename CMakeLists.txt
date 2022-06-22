@@ -11,6 +11,7 @@ add_executable(xvm
     xvm/cpu.c
     xvm/cpu.h
     xvm/execute.c
+    xvm/syscall.c
     common/signals.c
     common/signals.h
     common/symbols.c
@@ -20,9 +21,29 @@ add_executable(xvm
     common/loader.h
     common/sections.c
     common/sections.h
-    xvm/syscall.c
 )
 target_include_directories(xvm PUBLIC xvm common)
+
+add_executable(xdbg
+    xdbg/xdbg.c
+    xdbg/debug.c
+    xdbg/iface.c
+    xdbg/commands.c
+    xvm/cpu.c
+    xvm/cpu.h
+    xvm/execute.c
+    xvm/syscall.c
+    common/signals.c
+    common/signals.h
+    common/symbols.c
+    common/symbols.h
+    common/const.h
+    common/loader.c
+    common/loader.h
+    common/sections.c
+    common/sections.h
+)
+target_include_directories(xdbg PUBLIC xdbg xvm common)
 
 add_executable(xasm
     xasm/xasm.c

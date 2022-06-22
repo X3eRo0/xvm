@@ -1,0 +1,3 @@
+_start:
+    trap
+    hlt

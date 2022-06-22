@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define XVM_MAGIC 0x036d7678 // "xvm\x03"
 #define XVM_DFLT_EP 0x13371000
