@@ -2,8 +2,8 @@
 // Created by X3eRo0 on 2/28/2021.
 //
 
-#include "sections.h"
-#include "signals.h"
+#include <sections.h>
+#include <signals.h>
 
 section_entry* init_section_entry()
 {

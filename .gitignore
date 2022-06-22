@@ -4,5 +4,6 @@
 /build/
 /.idea
 /test/
+/.cache/
 *.xvm
 .gdb_history

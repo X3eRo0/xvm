@@ -5,8 +5,8 @@
 #ifndef XVM_SECTIONS_H
 #define XVM_SECTIONS_H
 
-#include "const.h"
-#include "signals.h"
+#include <const.h>
+#include <signals.h>
 
 
 #define WRITE_AS_BYTE 0
@@ -34,13 +34,6 @@ typedef struct section_t {
     u32 n_sections;
     signal_report* errors;
 } section;
-
-typedef enum {
-    XVM_INVALID_READ,
-    XVM_INVALID_WRITE,
-    XVM_INVALID_EXEC,
-    XVM_INVALID_ADDR,
-} segfault_id;
 
 
 section_entry*      init_section_entry();
@@ -74,5 +67,4 @@ section_entry*      add_section(section* sec, char* name, u32 size, u32 addr, u3
 u32                 show_section_info(section* sec);
 u32                 reset_address_of_sections(section* sec);
 u32                 fini_section(section* sec);
-void                segfault(u32 error, section_entry* sec_entry, u32 addr);
 #endif //XVM_SECTIONS_H

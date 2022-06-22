@@ -2,14 +2,7 @@
 // Created by X3eRo0 on 4/17/2021.
 //
 
-// TODO: add Left and Right Shift Instructions
-// TODO: add more syscalls
-
-#include "cpu.h"
-
-/*static xvm_instr instructions[] = {
-    {XVM_OP_HLT, &xvm_op_hlt}
-};*/
+#include <cpu.h>
 
 u32* get_register(xvm_cpu* cpu, u8 reg_id)
 {
@@ -294,6 +287,11 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
     // syscall
     case XVM_OP_SYSC: {
         do_syscall(cpu, bin);
+        break;
+    }
+    // trap
+    case XVM_OP_TRAP: {
+        raise_signal(cpu->errors, XSIGTRAP, cpu->regs.pc, 0);
         break;
     }
 
@@ -1249,7 +1247,7 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
             set_CF(cpu, 0);
         }
 
-        if (res & (1 << 31)){
+        if (res & (1 << 31)) {
             set_SF(cpu, 1);
         } else {
             set_SF(cpu, 0);
@@ -1358,7 +1356,6 @@ u32 do_execute(xvm_cpu* cpu, xvm_bin* bin)
 
         break;
     }
-
 
     // rjz/rje
     case XVM_OP_RJE:

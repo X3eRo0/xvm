@@ -5,7 +5,7 @@
 #ifndef XVM_SIGNALS_H
 #define XVM_SIGNALS_H
 
-#include "const.h"
+#include <const.h>
 
 typedef enum singals_t {
     NOSIGNAL,

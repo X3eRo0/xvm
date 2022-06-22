@@ -5,9 +5,9 @@
 #ifndef XVM_LOADER_H
 #define XVM_LOADER_H
 
-#include "../common/const.h"
-#include "../common/symbols.h"
-#include "../common/sections.h"
+#include <const.h>
+#include <symbols.h>
+#include <sections.h>
 
 typedef struct exe_header_t {
     // xvm binary header

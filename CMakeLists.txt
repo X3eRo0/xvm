@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(xvm C)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g -O0")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
 
@@ -21,6 +22,7 @@ add_executable(xvm
     common/sections.h
     xvm/syscall.c
 )
+target_include_directories(xvm PUBLIC xvm common)
 
 add_executable(xasm
     xasm/xasm.c
@@ -37,6 +39,7 @@ add_executable(xasm
     common/loader.c
     common/loader.h
 )
+target_include_directories(xasm PUBLIC xasm common)
 
 add_executable(xinfo
     xasm/xinfo.c
@@ -49,6 +52,7 @@ add_executable(xinfo
     common/sections.c
     common/sections.h
 )
+target_include_directories(xinfo PUBLIC xasm common)
 
 add_executable(xdis
     xasm/xdis.c
@@ -64,6 +68,7 @@ add_executable(xdis
     common/sections.c
     common/sections.h
 )
+target_include_directories(xdis PUBLIC xasm common)
 
 add_executable(ropgadget
     ropgadget/ropgadget.c
@@ -82,3 +87,4 @@ add_executable(ropgadget
     common/sections.c
     common/sections.h
 )
+target_include_directories(ropgadget PUBLIC ropgadget xasm common)

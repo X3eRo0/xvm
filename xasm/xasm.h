@@ -9,9 +9,9 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "../common/symbols.h"
-#include "../common/sections.h"
-#include "../common/loader.h"
+#include <symbols.h>
+#include <sections.h>
+#include <loader.h>
 
 
 #define XVM_NREGS   16

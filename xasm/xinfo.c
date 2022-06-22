@@ -2,7 +2,7 @@
 // Created by X3eRo0 on 3/3/2021.
 //
 
-#include "../common/loader.h"
+#include <loader.h>
 
 int main(int argc, char* argv[]){
 

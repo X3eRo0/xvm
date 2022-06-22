@@ -2,7 +2,7 @@
 // Created by X3eRo0 on 5/1/2021.
 //
 
-#include "xasm.h"
+#include <xasm.h>
 
 
 const char* registers[XVM_NREGS] = {

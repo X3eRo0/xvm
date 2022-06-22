@@ -1,7 +1,7 @@
 //
 // Created by X3eRo0 on 9/16/2021.
 //
-#include "signals.h"
+#include <signals.h>
 
 u32 raise_signal(signal_report* err, u32 signal_id, u32 error_addr, u32 error_misc)
 {

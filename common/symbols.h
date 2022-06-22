@@ -5,8 +5,8 @@
 #ifndef XVM_SYMBOLS_H
 #define XVM_SYMBOLS_H
 
-#include "const.h"
-#include "sections.h"
+#include <const.h>
+#include <sections.h>
 
 /*
 *

@@ -1,4 +1,4 @@
-#include "xasm.h"
+#include <xasm.h>
 
 const char* mnemonics[] = {
     [XVM_OP_MOV] = "mov",

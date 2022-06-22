@@ -2,7 +2,7 @@
 // Created by X3eRo0 on 2/23/2021.
 //
 
-#include "xasm.h"
+#include <xasm.h>
 
 static u32 ifiles = 0;
 static FILE** inputf = NULL;

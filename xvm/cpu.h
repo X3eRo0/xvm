@@ -2,8 +2,9 @@
 // Created by X3eRo0 on 4/15/2021.
 //
 
-#include "../common/const.h"
-#include "../common/loader.h"
+#include <const.h>
+#include <loader.h>
+#include <signals.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -15,7 +16,6 @@
 #ifndef XVM_CPU_H
 #define XVM_CPU_H
 
-#include "../common/signals.h"
 
 #define get_mode1(mode) (((mode) >> 0x0) & 0xf)
 #define get_mode2(mode) (((mode) >> 0x4) & 0xf)

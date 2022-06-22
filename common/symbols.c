@@ -2,7 +2,7 @@
 // Created by X3eRo0 on 2/21/2021.
 //
 
-#include "symbols.h"
+#include <symbols.h>
 
 /* ****************************** SYM_ENTRY ***************************** */
 

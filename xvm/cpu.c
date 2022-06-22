@@ -1,7 +1,7 @@
 //
 // Created by X3eRo0 on 4/15/2021.
 //
-#include "cpu.h"
+#include <cpu.h>
 
 void reset_reg(xvm_reg* regs)
 {

@@ -2,8 +2,8 @@
 // Created by X3eRo0 on 5/1/2021.
 //
 
-#include "../common/loader.h"
-#include "xasm.h"
+#include <loader.h>
+#include <xasm.h>
 #include <stdlib.h>
 
 int main(int argc, char *argv[]){
