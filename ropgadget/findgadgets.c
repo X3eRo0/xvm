@@ -1,3 +1,4 @@
+#include "xasm.h"
 #include <ropgadget.h>
 #include <stdio.h>
 
@@ -6,12 +7,12 @@ void xvm_find_ropgadgets(xvm_bin* bin, section_entry* sec, u32 depth)
     // make sure section is executable
 
     if (sec->m_name == NULL) {
-        printf("\n[" KGRN "+" KNRM "] Disassembling <Unnamed Section>\n");
+        xasm_info("Disassembling <Unnamed Section>\n");
     } else {
-        printf("\n[" KGRN "+" KNRM "] Disassembling %s\n", sec->m_name);
+        xasm_info("Disassembling %s\n", sec->m_name);
     }
-    printf("[" KGRN "+" KNRM "] Raw Size : %d BYTES\n", sec->m_ofst);
-    printf("[" KGRN "+" KNRM "] Address  : 0x%X\n", sec->v_addr);
+    xasm_info("Raw Size : %d BYTES\n", sec->m_ofst);
+    xasm_info("Address  : 0x%X\n", sec->v_addr);
 
     /*
      * How to find ropgadgets for xvm?
@@ -35,7 +36,7 @@ void xvm_find_ropgadgets(xvm_bin* bin, section_entry* sec, u32 depth)
     u32 dislen = 0;
 
     if (fp == NULL) {
-        printf("[!] could not get a handle on /dev/null\n");
+        xasm_warn("could not get a handle on /dev/null\n");
         exit(0);
     }
     for (int _counter = 0; _counter < sec->v_size; _counter++) {
@@ -64,13 +65,12 @@ void xvm_find_ropgadgets(xvm_bin* bin, section_entry* sec, u32 depth)
                     }
                 }
                 dislen = ((u8*)(sec->m_buff + _counter) - fixed_ptr) + 2;
-                u32 address = sec->v_addr + (fixed_ptr - (u8*)sec->m_buff) - 2;
+                u32 address = sec->v_addr + (fixed_ptr - (u8*)sec->m_buff);
                 // check if disassembled instruction is valid or not
-                if ((ninstr = xasm_disassemble_bytes(fp, bin, (char*)fixed_ptr, dislen, 0, 0, 1)) != E_ERR) {
+                if ((ninstr = xasm_disassemble_bytes_uncolored(fp, bin, (char*)fixed_ptr, dislen, 0, 0, 1)) != E_ERR) {
                     /* printf("==============START=============\naddress: 0x%x\nlen: 0x%x\nninstrs: 0x%x\n", address + 2, dislen, depth); */
-                    printf("==============START=============\n");
-                    xasm_disassemble_bytes(stdout, bin, (char*)fixed_ptr, dislen, address, 0, 1);
-                    printf("==============STOP==============\n");
+                    xasm_info("Gadget : 0x%x\n", address);
+                    xasm_disassemble_bytes_uncolored(stdout, bin, (char*)fixed_ptr, dislen, address, 0, 1);
                 }
                 _i += 1;
             }

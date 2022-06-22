@@ -2,6 +2,7 @@
 // Created by X3eRo0 on 4/18/2021.
 //
 
+#include "signals.h"
 #include <cpu.h>
 
 // do_syscall($r0, $r1, $r2, $r3)
@@ -14,6 +15,10 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin)
     // read
     case XVM_SYSC_READ: {
         section_entry* temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r2);
+        if (temp == NULL) {
+            raise_signal(bin->x_section->errors, XSIGSEGV, cpu->regs.r2, 0);
+            break;
+        }
         int fd = (int)cpu->regs.r1;
         size_t count = cpu->regs.r5;
 
@@ -29,6 +34,10 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin)
     // write
     case XVM_SYSC_WRITE: {
         section_entry* temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r2);
+        if (temp == NULL) {
+            raise_signal(bin->x_section->errors, XSIGSEGV, cpu->regs.r2, 0);
+            break;
+        }
         int fd = (int)cpu->regs.r1;
         size_t count = cpu->regs.r5;
 
@@ -65,10 +74,19 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin)
     case XVM_SYSC_UNMAP: {
 
         section_entry* temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r1);
+        if (temp == NULL) {
+            raise_signal(bin->x_section->errors, XSIGSEGV, cpu->regs.r1, 0);
+            break;
+        }
         section_entry* prev = NULL;
         section_entry* text = find_section_entry_by_name(bin->x_section, ".text");
         section_entry* data = find_section_entry_by_name(bin->x_section, ".data");
         section_entry* stack = find_section_entry_by_name(bin->x_section, "stack");
+
+        if (text == NULL || data == NULL || stack == NULL) {
+            raise_signal(bin->x_section->errors, XSIGSEGV, 0, 0);
+            break;
+        }
 
         if ((temp->v_addr == text->v_addr) || (temp->v_addr == data->v_addr) || (temp->v_addr == stack->v_addr)) {
             cpu->regs.r0 = E_ERR;
@@ -153,6 +171,10 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin)
     case XVM_SYSC_RECV: {
 
         section_entry* temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r2);
+        if (temp == NULL) {
+            raise_signal(bin->x_section->errors, XSIGSEGV, cpu->regs.r2, 0);
+            break;
+        }
         int fd = (int)cpu->regs.r1;
         size_t count = cpu->regs.r5;
 
@@ -168,6 +190,10 @@ u32 do_syscall(xvm_cpu* cpu, xvm_bin* bin)
     // send
     case XVM_SYSC_SEND: {
         section_entry* temp = find_section_entry_by_addr(bin->x_section, cpu->regs.r2);
+        if (temp == NULL) {
+            raise_signal(bin->x_section->errors, XSIGSEGV, cpu->regs.r2, 0);
+            break;
+        }
         int fd = (int)cpu->regs.r1;
         size_t count = cpu->regs.r5;
 

@@ -29,10 +29,14 @@ add_executable(xdbg
     xdbg/debug.c
     xdbg/iface.c
     xdbg/commands.c
+    xdbg/helperfuncs.c
     xvm/cpu.c
     xvm/cpu.h
     xvm/execute.c
     xvm/syscall.c
+    xasm/disasm.c
+    xasm/mnemonics.c
+    xasm/xasm_functions.c
     common/signals.c
     common/signals.h
     common/symbols.c
@@ -43,7 +47,7 @@ add_executable(xdbg
     common/sections.c
     common/sections.h
 )
-target_include_directories(xdbg PUBLIC xdbg xvm common)
+target_include_directories(xdbg PUBLIC xdbg xvm common xasm)
 
 add_executable(xasm
     xasm/xasm.c

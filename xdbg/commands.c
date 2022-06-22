@@ -1,31 +1,74 @@
-#include "iface.h"
+#include "sections.h"
+#include "symbols.h"
 #include <commands.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <xasm.h>
 
 u32 cmd_help(iface_state* state, const char* command)
 {
-    printf("[+] help command\n");
+    xdbg_info("Help Menu:\n");
+    printf("\n      Command        Description\n\n");
+    for (u32 i = 0; cmds[i].cmd != NULL; i++) {
+        printf("  [%.2d] %s%-10.10s%s\n", i + 1, cmds[i].cmd, " ", cmds[i].desc);
+    }
+    putchar(10);
     return E_OK;
 }
 
 u32 cmd_regs(iface_state* state, const char* command)
 {
     xvm_cpu* cpu = state->cpu;
-    printf("PC -- 0x%.8X [ZF : %s] [CF : %s]\n", cpu->regs.pc, (get_ZF(cpu) == 1 ? "True" : "False"), (get_CF(cpu) == 1 ? "True" : "False"));
-    printf("$r0 : 0x%.8X\t$r1 : 0x%.8X\t$r2 : 0x%.8X\t$r3 : 0x%.8X\n", cpu->regs.r0, cpu->regs.r1, cpu->regs.r2, cpu->regs.r3);
-    printf("$r4 : 0x%.8X\t$r5 : 0x%.8X\t$r6 : 0x%.8X\t$r7 : 0x%.8X\n", cpu->regs.r4, cpu->regs.r5, cpu->regs.r6, cpu->regs.r7);
-    printf("$r8 : 0x%.8X\t$r9 : 0x%.8X\t$ra : 0x%.8X\t$rb : 0x%.8X\n", cpu->regs.r8, cpu->regs.r9, cpu->regs.ra, cpu->regs.rb);
-    printf("$rc : 0x%.8X\t$pc : 0x%.8X\t$bp : 0x%.8X\t$sp : 0x%.8X\n", cpu->regs.rc, cpu->regs.pc, cpu->regs.bp, cpu->regs.sp);
+    for (u32 _reg = reg_r0; _reg < XVM_NREGS; _reg++) {
+        print_register(state, _reg);
+    }
+    return E_OK;
+}
+
+u32 cmd_disasm(iface_state* state, const char* command)
+{
+    // try to parse as a symbol. if no symbol exist then
+    // try to parse as number.
+
+    char* argument = (char*)command + 6;
+    clear_whitespaces(argument);
+    char* ninstr_s = argument;
+    skip_to_whitespace(ninstr_s);
+    u32 ninstr = 5;
+    if (*ninstr_s != '\0') {
+        *ninstr_s++ = '\0';
+        clear_whitespaces(ninstr_s);
+        ninstr = atoi(ninstr_s);
+    }
+    u32 symaddr = resolve_symbol_addr(state->bin->x_symtab, argument);
+    if (symaddr == E_ERR) {
+        if (resolve_number(argument, &symaddr) == E_ERR) {
+            xdbg_error("No function \"%s\" in the current context.\n");
+            return E_ERR;
+        }
+    }
+    section_entry* sec = find_section_entry_by_addr(state->bin->x_section, symaddr);
+    if (sec == NULL) {
+        xdbg_error("Unmapped address: 0x%.8x\n", symaddr);
+        return E_ERR;
+    }
+    const char* bytecode = (const char*)(sec->m_buff + symaddr - sec->v_addr);
+    u32 len = sec->v_addr + sec->v_size - symaddr;
+    xasm_disassemble_bytes_colored(stdout, state->bin, bytecode, len, symaddr, ninstr, 1);
     return E_OK;
 }
 
 u32 cmd_exit(iface_state* state, const char* command)
 {
-    printf("[+] exit command\n");
+    xdbg_info("Exitting xdbg.\n");
+    state->rflag ^= 1;
     return E_OK;
 }
 
 u32 cmd_invalid(iface_state* state, const char* command)
 {
-    printf("[+] invalid command\n");
+    (void)state;
+    (void)command;
+    xdbg_error("Invalid command.\n");
     return E_OK;
 }

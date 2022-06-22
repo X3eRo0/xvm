@@ -33,8 +33,16 @@ int main(int argc, char* argv[])
         // try to use argv[2] as address to disassemble
         addr = xasm_resolve_number(argv[2]);
         section = find_section_entry_by_addr(bin->x_section, addr);
+        if (section == NULL) {
+            fprintf(stderr, "[!] Error: 0x%.8X address is not mapped\n", addr);
+            return E_ERR;
+        }
     } else {
         section = find_section_entry_by_name(bin->x_section, ".text");
+        if (section == NULL) {
+            fprintf(stderr, "[!] Error: could not found .text section (possible corrupt xvm file)\n");
+            return E_ERR;
+        }
         addr = section->v_addr;
     }
 

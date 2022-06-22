@@ -6,61 +6,62 @@
 
 static u32 ifiles = 0;
 static FILE** inputf = NULL;
-static char*  output = "./a.xvm";
+static char* output = "./a.xvm";
 static u32 dbgsyms = 0;
 static u32 scode_m = 0;
 
-#define USAGE()             puts("Usage: ./xasm -i <input files> -o <output file>");\
-                            puts("Author: X3eRo0");                                 \
-                            puts("\t-s -- \tShellcode mode");                       \
-                            puts("\t-i -- \tInput Files");\
-                            puts("\t-o -- \tOutput File");\
-                            puts("\t-h -- \tHelp");\
-                            exit(-1);
+#define USAGE()                                              \
+    puts("Usage: ./xasm -i <input files> -o <output file>"); \
+    puts("Author: X3eRo0");                                  \
+    puts("\t-s -- \tShellcode mode");                        \
+    puts("\t-i -- \tInput Files");                           \
+    puts("\t-o -- \tOutput File");                           \
+    puts("\t-h -- \tHelp");                                  \
+    exit(-1);
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[])
+{
 
     // initialize assembler structure
-    xasm*   xasm = init_xasm();
+    xasm* xasm = init_xasm();
 
-    if (argc < 2){
+    if (argc < 2) {
         USAGE();
     }
 
-    for (u32 i = 0; i < argc; i++){
+    for (u32 i = 0; i < argc; i++) {
         // if -i count until we reach other flags
-        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'i'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'i') {
             u32 j = ++i;
             while (argv[j] != NULL && argv[j++][0] != '-') {
                 ifiles++;
-                inputf = realloc(inputf, sizeof(char *) * ifiles);
+                inputf = realloc(inputf, sizeof(char*) * ifiles);
                 inputf[ifiles - 1] = fopen(argv[i++], "r");
-                if (inputf[ifiles - 1] == NULL){
+                if (inputf[ifiles - 1] == NULL) {
                     xasm_error(E_INVALID_INPUTFILE, 0, NULL, "Cannot Open File : %s", argv[i - 1]);
                 }
             }
 
-            if (ifiles == 0){
+            if (ifiles == 0) {
                 USAGE();
             }
         }
-        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'o'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'o') {
             output = argv[++i];
         }
-        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'd'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 'd') {
             dbgsyms = 1;
         }
-        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 's'){
+        if (argv[i] != NULL && argv[i][0] == '-' && argv[i][1] == 's') {
             scode_m = 1;
         }
-        if ((argv[i] != NULL) && ((argv[i][0] == '-' && argv[i][1] == 'h') || (!strncmp(argv[i], "--help", 6)))){
+        if ((argv[i] != NULL) && ((argv[i][0] == '-' && argv[i][1] == 'h') || (!strncmp(argv[i], "--help", 6)))) {
             USAGE();
         }
     }
 
     // xasm structure initialization
     xasm->sections = init_section();
-
 
     // open the input and output files
     // for assembling
@@ -69,13 +70,12 @@ int main(int argc, char* argv[]){
 
     // if shellcode mode
 
-    if (scode_m){
+    if (scode_m) {
         xasm_assemble(xasm, NULL, inputf, ifiles);
         show_symtab_info(xasm->symtab);
         write_raw_section_to_file(xasm->sections, xasm->ofile);
         goto xasm_ret;
     }
-
 
     // add default .text and .data sections
     section_entry* text = add_section(xasm->sections, ".text", 0x1000, XVM_DFLT_EP, PERM_READ | PERM_EXEC);
@@ -99,21 +99,27 @@ int main(int argc, char* argv[]){
 
     // write symbol table
     if (dbgsyms) {
-        write_symtab_to_file(xasm->symtab, xasm->sections, xasm->ofile);
+        if (write_symtab_to_file(xasm->symtab, xasm->sections, xasm->ofile) == E_ERR) {
+            fprintf(stderr, "[!] Error: An error occured while writing symbols\n");
+            return E_ERR;
+        }
     }
 
     // write section data to files
     write_section_to_file(xasm->sections, xasm->ofile);
 
-    xasm_ret:
+xasm_ret:
     // destroy assembler structure
-    fini_xasm(xasm); xasm = NULL;
+    fini_xasm(xasm);
+    xasm = NULL;
 
-    for (u32 i = 0; i < ifiles; i++){
-        fclose(inputf[i]); inputf[i] = NULL;
+    for (u32 i = 0; i < ifiles; i++) {
+        fclose(inputf[i]);
+        inputf[i] = NULL;
     }
 
-    free(inputf); inputf = NULL;
+    free(inputf);
+    inputf = NULL;
 
     // return successfully
     return E_OK;

@@ -30,6 +30,28 @@ typedef enum {
 } mem_perms;
 
 typedef enum {
+
+    reg_r0,
+    reg_r1,
+    reg_r2,
+    reg_r3,
+    reg_r4,
+    reg_r5,
+    reg_r6,
+    reg_r7,
+    reg_r8,
+    reg_r9,
+    reg_ra,
+    reg_rb,
+    reg_rc,
+    reg_pc,
+    reg_bp,
+    reg_sp,
+
+} xvm_registers;
+
+
+typedef enum {
     XVM_OP_MOV,
     XVM_OP_MOVB,
     XVM_OP_MOVW,
@@ -132,6 +154,7 @@ typedef enum {
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
+#define DRED "\x1B[31;1m"
 #define KGRN "\x1B[32m"
 #define KYEL "\x1B[33m"
 #define KBLU "\x1B[34m"

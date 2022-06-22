@@ -385,7 +385,6 @@ section_entry* find_section_entry_by_name(section* sec, char* name)
         temp = temp->next;
     }
 
-    raise_signal(sec->errors, XSIGSEGV, 0, 0);
     return NULL;
 }
 
@@ -399,8 +398,6 @@ section_entry* find_section_entry_by_addr(section* sec, u32 addr)
         }
         temp = temp->next;
     }
-
-    raise_signal(sec->errors, XSIGSEGV, addr, 0);
     return NULL;
 }
 

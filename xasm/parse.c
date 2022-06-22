@@ -5,26 +5,6 @@
 #include <xasm.h>
 
 
-const char* registers[XVM_NREGS] = {
-        [reg_r0] = "$r0",
-        [reg_r1] = "$r1",
-        [reg_r2] = "$r2",
-        [reg_r3] = "$r3",
-        [reg_r4] = "$r4",
-        [reg_r5] = "$r5",
-        [reg_r6] = "$r6",
-        [reg_r7] = "$r7",
-        [reg_r8] = "$r8",
-        [reg_r9] = "$r9",
-        [reg_ra] = "$ra",
-        [reg_rb] = "$rb",
-        [reg_rc] = "$rc",
-        [reg_pc] = "$pc",
-        [reg_bp] = "$bp",
-        [reg_sp] = "$sp",
-};
-
-
 char* xasm_resolve_mnemonic(u32 opcode){
     // resolve opcode's mnemonic
 
@@ -54,7 +34,7 @@ u32 xasm_resolve_opcode(char* args){
 char* xasm_resolve_register(u32 reg_id){
     // return register string
 
-    return reg_id < XVM_NREGS ? (char*)registers[reg_id] : NULL;
+    return reg_id < XVM_NREGS ? (char*)regid_2_str[reg_id] : NULL;
 }
 
 u32 xasm_resolve_register_id(char* reg_s){
