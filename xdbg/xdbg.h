@@ -4,7 +4,9 @@
 #include <cpu.h>
 #include <iface.h>
 
-void handle_signals(xvm_cpu* cpu, xvm_bin* bin);
-void dbg_cpu(xvm_cpu* cpu, xvm_bin* bin);
+void unload_binary(iface_state* state);
+void load_binary(iface_state* state, const char* filename);
+void handle_signals(iface_state* state);
+void dbg_cpu(iface_state* state);
 
 #endif // !XDBG_H

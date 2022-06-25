@@ -194,6 +194,75 @@ u32 write_dword(section* sec, u32 addr, u32 dword)
     return E_ERR;
 }
 
+u32 get_byte(section* sec, u32 addr, u8* byte)
+{
+    // get byte regardless of perms
+    *byte = 0;
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        *byte = (u8) * ((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+u32 get_word(section* sec, u32 addr, u16* word)
+{
+    // get byte regardless of perms
+    *word = 0;
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        *word = (u16) * ((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+u32 get_dword(section* sec, u32 addr, u32* dword)
+{
+    // get byte regardless of perms
+    *dword = 0;
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        *dword = (u32) * ((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]);
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+u32 set_byte(section* sec, u32 addr, u8 byte)
+{
+    // set byte regardless of perms
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        *((u8*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = byte;
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+u32 set_word(section* sec, u32 addr, u16 word)
+{
+    // set byte regardless of perms
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        *((u16*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = word;
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+u32 set_dword(section* sec, u32 addr, u32 dword)
+{
+    // get byte regardless of perms
+    section_entry* sec_entry = find_section_entry_by_addr(sec, addr);
+    if (sec_entry != NULL) {
+        *((u32*)&sec_entry->m_buff[addr - sec_entry->v_addr]) = dword;
+        return E_OK;
+    }
+    return E_ERR;
+}
+
 u32 set_section_entry(section_entry* sec_entry, char* name, u32 size, u32 addr, u32 flag)
 {
     // set section entry members
@@ -256,7 +325,7 @@ u32 show_section_entry_info(section_entry* sec_entry)
 
     printf(KNRM "       ");
 
-    printf(KGRN "#0x%06X\n" KNRM, sec_entry->v_addr);
+    printf(KGRN "#0x%08X" KNRM " - " KGRN "#0x%08X\n" KNRM, sec_entry->v_addr, sec_entry->v_addr + sec_entry->v_size);
 
     return E_OK;
 }

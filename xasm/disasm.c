@@ -2,6 +2,7 @@
 // Created by X3eRo0 on 5/1/2021.
 //
 
+#include "symbols.h"
 #include <xasm.h>
 
 u32 xasm_disassemble_bytes_uncolored(FILE* fp, xvm_bin* bin, const char* bytecode, u32 len, u32 address, u32 ninstr, u32 need_clean)
@@ -49,6 +50,14 @@ u32 internal_xasm_disassemble_bytes(FILE* fp, xvm_bin* bin, const char* bytecode
     u8 clean_disassembly = E_OK; // if we get any weird disassembly then clean_disassembly = E_ERR:
     u32 i = 0;
     for (i = 0; (pc < len) && i < ninstr; i++) {
+        temp = resolve_symbol_name(bin->x_symtab, address + pc);
+        if (temp != NULL) {
+            if (colored) {
+                printf(KBLU "\n0x%.8X" KNRM " <" KGRN "%s" KNRM ">:\n", address + pc, temp);
+            } else {
+                printf("\n0x%.8X <%s>:\n", address + pc, temp);
+            }
+        }
         opcode = bytecode[pc++];
 
         if (opcode >= XVM_OP_RJMP && opcode <= XVM_OP_RJBE) {

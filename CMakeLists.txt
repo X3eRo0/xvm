@@ -30,6 +30,7 @@ add_executable(xdbg
     xdbg/iface.c
     xdbg/commands.c
     xdbg/helperfuncs.c
+    xdbg/breakpoints.c
     xvm/cpu.c
     xvm/cpu.h
     xvm/execute.c
