@@ -1,3 +1,5 @@
+#include "const.h"
+#include "sections.h"
 #include <breakpoints.h>
 #include <commands.h>
 #include <xasm.h>
@@ -60,9 +62,24 @@ u32 cmd_tele(iface_state* state, const char* args[])
     u32 nptrs = 5; // default number of pointers to show
     u32 address = state->cpu->regs.sp;
 
-    if (args[1] && resolve_number((char*)args[1], &address) == E_ERR) {
-        xdbg_error("Invalid number \"%s\".\n", args[1]);
-        return E_ERR;
+    if (args[1]) {
+        if (args[1][0] == '$') { // parse as register
+            for (u32 i = reg_r0; i <= reg_sp; i++) {
+                if (!strncmp(args[1], regid_2_str[i], strlen(regid_2_str[i]))) {
+                    // print register
+                    address = ((u32*)&state->cpu->regs)[i];
+                }
+            }
+            if (address == 0) {
+                xdbg_error("Invalid register \"%s\".\n", args[1]);
+                return E_ERR;
+            }
+        } else {
+            if (resolve_number((char*)args[1], &address) == E_ERR) {
+                xdbg_error("Invalid number \"%s\".\n", args[1]);
+                return E_ERR;
+            }
+        }
     }
 
     if (args[2] && resolve_number((char*)args[2], &nptrs) == E_ERR) {
@@ -70,7 +87,7 @@ u32 cmd_tele(iface_state* state, const char* args[])
         return E_ERR;
     }
 
-    for (int i = 0; i < nptrs; i++) {
+    for (int i = 1; i < nptrs; i++) {
 
         section_entry* sec = find_section_entry_by_addr(state->bin->x_section, address);
         if (sec == NULL) {
@@ -81,7 +98,7 @@ u32 cmd_tele(iface_state* state, const char* args[])
         char* symbol = resolve_symbol_name(state->bin->x_symtab, address);
         u32 value = read_dword(state->bin->x_section, address, PERM_READ);
         if (symbol != NULL) {
-            printf("  " KYEL "#0x%.8X " KNRM ":    " KBLU "0x%.8X" KRED "->" KNRM " (" KGRN "%s" KNRM ")\n", address, value, symbol);
+            printf("  " KYEL "#0x%.8X " KNRM ":    " KBLU "0x%.8X" KRED " ->" KNRM " (" KGRN "%s" KNRM ")\n", address, value, symbol);
         } else {
             printf("  " KYEL "#0x%.8X " KNRM ":    " KBLU "0x%.8X" KNRM "\n", address, value);
         }
@@ -116,19 +133,128 @@ u32 cmd_vmmap(iface_state* state, const char* args[])
     return E_OK;
 }
 
+u32 cmd_set(iface_state* state, const char* args[])
+{
+    if (args[1] == NULL || args[2] == NULL || args[3] == NULL) {
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : address/register>\n    <Mandatary  : width (Byte,Word/Half,Dword)>\n    <Mandatary  : Value (u32)>\n");
+        return E_ERR;
+    }
+
+    u32 value = 0;
+    if (resolve_number((char*)args[3], &value) == E_ERR) {
+        xdbg_error("Invalid number \"%s\".\n", args[3]);
+        return E_ERR;
+    }
+
+    u32 type = 0;
+    char* temp_buffer = strdup(args[2]);
+
+    for (int i = 0; i < strlen(temp_buffer); i++) {
+        temp_buffer[i] |= ' '; // make it lowercase
+    }
+    if (!strncmp(temp_buffer, "b", 1)) {
+        type = TYPE_BYTES;
+    } else if (!strncmp(temp_buffer, "h", 1) || !strncmp(temp_buffer, "w", 1)) {
+        type = TYPE_WORDS;
+    } else if (!(strncmp(temp_buffer, "d", 1))) {
+        type = TYPE_DWORD;
+    } else {
+        xdbg_error("Invalid format \"%s\".\n", args[2]);
+    }
+    free(temp_buffer);
+    temp_buffer = NULL;
+    void* buffer = NULL;
+    u32 address = 0;
+    if (args[1][0] == '$') { // parse as register
+        for (u32 i = reg_r0; i <= reg_sp; i++) {
+            if (!strncmp(args[1], regid_2_str[i], strlen(regid_2_str[i]))) {
+                // print register
+                buffer = &((u32*)&state->cpu->regs)[i];
+                break;
+            }
+        }
+        if (buffer == NULL) {
+            xdbg_error("Invalid register \"%s\".\n", args[1]);
+            return E_ERR;
+        }
+    } else {
+        if (resolve_number((char*)args[1], &address) == E_ERR) {
+            xdbg_error("Invalid number \"%s\".\n", args[1]);
+            return E_ERR;
+        }
+        section_entry* temp = find_section_entry_by_addr(state->bin->x_section, address);
+        if (temp == NULL) {
+            xdbg_error("Invalid address \"#0x%.8x\".\n", address);
+            return E_ERR;
+        }
+        buffer = temp->m_buff + (address - temp->v_addr);
+    }
+
+    switch (type) {
+    case TYPE_BYTES: {
+        *(u8*)buffer = value & 0xff;
+        break;
+    }
+    case TYPE_WORDS: {
+        *(u16*)buffer = value & 0xffff;
+        break;
+    }
+    case TYPE_DWORD: {
+        *(u32*)buffer = value;
+        break;
+    }
+    default: {
+        xdbg_error("Invalid type.\n");
+        return E_ERR;
+    }
+    }
+
+    return E_OK;
+}
+
 u32 cmd_xamine(iface_state* state, const char* args[])
 {
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : address>\n    <Optional  : width (Byte,Word/Half,Dword,Instructions)>\n    <Optional  : # of Bytes>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : address>\n    <Optional  : width (Byte,Word/Half,Dword,String,Instructions)>\n    <Optional  : # of Bytes>\n");
         return E_ERR;
     }
     u32 address = 0;
     u32 type = TYPE_BYTES; // default type is BYTES
     u32 len = 0x100; // default dump length is 0x100
-    if (resolve_number((char*)args[1], &address) == E_ERR) {
-        xdbg_error("Invalid number \"%s\".\n", args[1]);
-        return E_ERR;
+
+    if (args[2] == NULL) {
+        // if only arg1 and arg1 is reg then print register
+        if (args[1][0] == '$') { // parse as register
+            for (u32 i = reg_r0; i <= reg_sp; i++) {
+                if (!strncmp(args[1], regid_2_str[i], strlen(regid_2_str[i]))) {
+                    // print register
+                    xdbg_print_register(state, i);
+                    return E_OK;
+                }
+            }
+            xdbg_error("Invalid register \"%s\".\n", args[1]);
+            return E_ERR;
+        }
+    } else {
+        if (args[1][0] == '$') { // parse as register
+            for (u32 i = reg_r0; i <= reg_sp; i++) {
+                if (!strncmp(args[1], regid_2_str[i], strlen(regid_2_str[i]))) {
+                    // print register
+                    address = ((u32*)&state->cpu->regs)[i];
+                }
+            }
+            if (address == 0) {
+                xdbg_error("Invalid register \"%s\".\n", args[1]);
+                return E_ERR;
+            }
+        } else {
+            if (resolve_number((char*)args[1], &address) == E_ERR) {
+                xdbg_error("Invalid number \"%s\".\n", args[1]);
+                return E_ERR;
+            }
+        }
     }
+
     section_entry* sec = find_section_entry_by_addr(state->bin->x_section, address);
     if (sec == NULL) {
         xdbg_error("Unmapped address: 0x%.8x.\n", address);
@@ -147,6 +273,8 @@ u32 cmd_xamine(iface_state* state, const char* args[])
             type = TYPE_WORDS;
         } else if (!(strncmp(temp_buffer, "d", 1))) {
             type = TYPE_DWORD;
+        } else if (!(strncmp(temp_buffer, "s", 1))) {
+            type = TYPE_STRING;
         } else if (!strncmp(temp_buffer, "i", 1)) {
             type = TYPE_DISASM;
         }
@@ -163,6 +291,10 @@ u32 cmd_xamine(iface_state* state, const char* args[])
 
     const char* buffer = (const char*)(sec->m_buff + address - sec->v_addr);
     if (type != TYPE_DISASM) {
+        if (type == TYPE_STRING) {
+            type = TYPE_BYTES;
+            len = strlen(buffer);
+        }
         xdbg_hexdump(stdout, buffer, len, type, address);
     } else {
         unpatch_breakpoints(state->bps, state->bin->x_section);
@@ -229,6 +361,13 @@ u32 cmd_run(iface_state* state, const char* args[])
     return E_OK;
 }
 
+u32 cmd_continue(iface_state* state, const char* args[])
+{
+    unpatch_breakpoint_by_addr(state->bps, state->bin->x_section, state->cpu->regs.pc);
+    set_RF(state->cpu, 1);
+    return E_OK;
+}
+
 u32 cmd_stop(iface_state* state, const char* args[])
 {
     set_RF(state->cpu, 0);
@@ -248,6 +387,10 @@ u32 cmd_break(iface_state* state, const char* args[])
             xdbg_error("No function \"%s\" in the current context.\n");
             return E_ERR;
         }
+    }
+
+    if (state->bps == NULL) {
+        state->bps = init_breakpoint();
     }
 
     if (add_breakpoint(state->bps, state->bin->x_section, address) == E_ERR) {

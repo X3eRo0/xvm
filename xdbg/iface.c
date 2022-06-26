@@ -16,7 +16,9 @@ const iface_cmd cmds[] = {
     { .cmd = "regs", .desc = "Print out all registers and enhance the information.", .method = cmd_regs },
     { .cmd = "disasm", .desc = "Disassemble a symbol.", .method = cmd_disasm },
     { .cmd = "x", .desc = "Examine memory/registers.", .method = cmd_xamine },
+    { .cmd = "set", .desc = "Modify memory/registers.", .method = cmd_set },
     { .cmd = "r", .desc = "Run the binary.", .method = cmd_run },
+    { .cmd = "continue", .desc = "Continue execution.", .method = cmd_continue },
     { .cmd = "stop", .desc = "Stop the binary.", .method = cmd_stop },
     { .cmd = "vmmap", .desc = "Print section mappings.", .method = cmd_vmmap },
     { .cmd = "tele", .desc = "Recursively dereferences pointers starting at the specified address.", .method = cmd_tele },
@@ -64,7 +66,7 @@ void xdbg_iface(iface_state* state, const char* name)
     char* args[IFACE_MAX_CMD_ARGS] = { 0 };
 
     state->rflag = true;
-    state->bps = init_breakpoint();
+    state->bps = NULL;
     load_binary(state, name);
 
     set_RF(state->cpu, 0);

@@ -13,6 +13,7 @@ typedef enum {
     TYPE_BYTES = 0,
     TYPE_WORDS,
     TYPE_DWORD,
+    TYPE_STRING,
     TYPE_DISASM,
 } xdbg_dump_types;
 
@@ -60,9 +61,11 @@ u32 cmd_load(iface_state* state, const char* args[]);
 u32 cmd_regs(iface_state* state, const char* args[]);
 u32 cmd_disasm(iface_state* state, const char* args[]);
 u32 cmd_xamine(iface_state* state, const char* args[]);
+u32 cmd_set(iface_state* state, const char* args[]);
 u32 cmd_tele(iface_state* state, const char* args[]);
 u32 cmd_vmmap(iface_state* state, const char* args[]);
 u32 cmd_run(iface_state* state, const char* args[]);
+u32 cmd_continue(iface_state* state, const char* args[]);
 u32 cmd_stop(iface_state* state, const char* args[]);
 u32 cmd_context(iface_state* state, const char* args[]);
 u32 cmd_break(iface_state* state, const char* args[]);

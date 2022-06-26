@@ -1,8 +1,4 @@
-#include "breakpoints.h"
-#include "commands.h"
-#include "iface.h"
-#include "loader.h"
-#include "signals.h"
+#include <commands.h>
 #include <xdbg.h>
 
 void handle_signals(iface_state* state)
@@ -100,6 +96,8 @@ void dbg_cpu(iface_state* state)
     u32 instr_size = 0;
     while (get_RF(state->cpu)) {
         instr_size = do_execute(state->cpu, state->bin);
+        // fix all the breakpoints that are unpatched.
+        patch_breakpoints(state->bps, state->bin->x_section); // this line is here to implement continue command.
         handle_signals(state);
     }
 }

@@ -647,6 +647,7 @@ u32 fini_section(section* sec)
         fini_section_entry(prev);
     }
 
+    free(sec->errors); sec->errors = NULL;
     sec->sections = NULL;
     free(sec);
     sec = NULL;
