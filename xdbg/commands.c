@@ -136,7 +136,7 @@ u32 cmd_vmmap(iface_state* state, const char* args[])
 u32 cmd_set(iface_state* state, const char* args[])
 {
     if (args[1] == NULL || args[2] == NULL || args[3] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : address/register>\n    <Mandatary  : width (Byte,Word/Half,Dword)>\n    <Mandatary  : Value (u32)>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : address/register>\n    <Mandatary  : width (Byte,Word/Half,Dword)>\n    <Mandatary  : Value (u32)>\n");
         return E_ERR;
     }
 
@@ -215,7 +215,7 @@ u32 cmd_set(iface_state* state, const char* args[])
 u32 cmd_xamine(iface_state* state, const char* args[])
 {
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : address>\n    <Optional  : width (Byte,Word/Half,Dword,String,Instructions)>\n    <Optional  : # of Bytes>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : address>\n    <Optional  : width (Byte,Word/Half,Dword,String,Instructions)>\n    <Optional  : # of Bytes>\n");
         return E_ERR;
     }
     u32 address = 0;
@@ -310,7 +310,7 @@ u32 cmd_disasm(iface_state* state, const char* args[])
     // try to parse as number.
 
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : address>\n    <Optional   : number of instructions>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : address>\n    <Optional  : number of instructions>\n");
         return E_ERR;
     }
 
@@ -342,7 +342,7 @@ u32 cmd_disasm(iface_state* state, const char* args[])
 
 u32 cmd_exit(iface_state* state, const char* args[])
 {
-    xdbg_info("Exitting xdbg.\n");
+    xdbg_info("Exiting xdbg.\n");
     state->rflag ^= 1;
     return E_OK;
 }
@@ -377,7 +377,7 @@ u32 cmd_stop(iface_state* state, const char* args[])
 u32 cmd_break(iface_state* state, const char* args[])
 {
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : <address>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : <address>\n");
         return E_ERR;
     }
 
@@ -409,7 +409,7 @@ u32 cmd_showbp(iface_state* state, const char* args[])
 u32 cmd_disable(iface_state* state, const char* args[])
 {
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : <breakpoint id/all>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : <breakpoint id/all>\n");
         return E_ERR;
     }
 
@@ -429,7 +429,7 @@ u32 cmd_disable(iface_state* state, const char* args[])
 u32 cmd_enable(iface_state* state, const char* args[])
 {
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : <breakpoint id/all>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : <breakpoint id/all>\n");
         return E_ERR;
     }
 
@@ -449,7 +449,7 @@ u32 cmd_enable(iface_state* state, const char* args[])
 u32 cmd_delete(iface_state* state, const char* args[])
 {
     if (args[1] == NULL) {
-        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary : <breakpoint id/all>\n");
+        xdbg_error("Missing arguments\n  Arguments:\n    <Mandatary  : <breakpoint id/all>\n");
         return E_ERR;
     }
 

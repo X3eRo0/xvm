@@ -31,6 +31,7 @@ add_executable(xdbg
     xdbg/commands.c
     xdbg/helperfuncs.c
     xdbg/breakpoints.c
+    xdbg/repl.c
     xvm/cpu.c
     xvm/cpu.h
     xvm/execute.c
@@ -38,6 +39,7 @@ add_executable(xdbg
     xasm/disasm.c
     xasm/mnemonics.c
     xasm/xasm_functions.c
+    common/cstring.c
     common/signals.c
     common/signals.h
     common/symbols.c
@@ -113,4 +115,5 @@ add_executable(ropgadget
     common/sections.c
     common/sections.h
 )
+
 target_include_directories(ropgadget PUBLIC ropgadget xasm common)

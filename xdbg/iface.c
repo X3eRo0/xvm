@@ -76,8 +76,8 @@ void xdbg_iface(iface_state* state, const char* name)
         if (get_RF(state->cpu)) {
             dbg_cpu(state);
         } else {
-
-            readcmd("xdbg> ", command, IFACE_MAX_CMD_SZ);
+            repl_state* rs = repl_init("xdbg> ");
+            repl_readline(rs, command, IFACE_MAX_CMD_SZ);
             xdbg_parse_args(command, args);
             u32 ret = evalcmd(state, (const char**)args);
             if (ret == E_ERR) {
