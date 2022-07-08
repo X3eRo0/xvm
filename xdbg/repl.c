@@ -320,8 +320,6 @@ u32 repl_handle_keys(repl_state* rs, u64 ch)
     }
     default: {
         repl_insert(rs, (u8)ch);
-        /* printf("%ld -- 0x%lx\r\n", ch, ch); */
-        /* fflush(stdout); */
         break;
     }
     }
